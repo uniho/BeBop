@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Sample Demo</title>
+</head>
+
+<body>
+  <div id="App"></div>
+</body>
+
+<script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/htm"></script>
+
+<script type="module">
+
+  // Emotion is a performant and flexible CSS-in-JS library. 
+  // https://github.com/emotion-js/emotion
+  import {css, injectGlobal} from 'https://cdn.skypack.dev/@emotion/css?min'
+
+  // htm is JSX-like syntax in plain JavaScript - no transpiler necessary.
+  // https://github.com/developit/htm
+  const html = htm.bind(React.createElement)
+
+  //
+  const ClickCounter = props => {
+    const [count, setCount] = React.useState(0)
+    
+    return html`
+    <p class=${style1}>
+      <button onClick=${() => setCount(state => state + 1)}>
+        Clicked ${count} times
+      </button>
+    </p>
+    `
+  }
+
+  // Render-as-You-Fetch
+  // https://reactjs.org/docs/concurrent-mode-suspense.html#approach-3-render-as-you-fetch-using-suspense
+  const wrapPromise = promise => {
+    let status = "pending";
+    let result;
+    const suspender = promise.then(
+      r => {
+        status = "success";
+        result = r;
+      },
+      e => {
+        status = "error";
+        result = e;
+      }
+    );
+    return {
+      read() {
+        if (status === "pending") {
+          throw suspender;
+        } else if (status === "error") {
+          throw result;
+        } else if (status === "success") {
+          return result;
+        }
+      }
+    };
+  }
+
+  // Unlike the NodeJS, require() return a type of Promise.
+  // If you want a synchronous processing, you can choose requireSync().
+  // But don't forget synchronous methods will often block UI.
+  const bebop = requireSync('bebop')
+
+  const Tools = props => {
+
+    const {browser} = bebop
+
+    return html`
+    <p class=${style2}>
+      <button onClick=${() => browser.reload()}>
+        Reload Page (F5)
+      </button>
+      <button onClick=${() => browser.showDevTools()}>
+        Show Dev Tools (F12)
+      </button>
+    </p>
+    `
+  }
+
+  //
+  const readFileResource = wrapPromise((async() => {
+    const fs = await require('fs')
+    const util = await require('util')
+  
+    let buf = await fs.readFile('index.js', {codePage: 0})
+    let text = util.UTF8Decode(buf)
+    buf = util.UTF8Encode(text) // Test
+    text = util.UTF8Decode(buf) // Test
+    buf = util.SetCodePage(text, 932/*SJIS*/) // Test
+    text = util.SetCodePage(buf, 932/*SJIS*/) // Test
+    return text
+  })())
+
+  const FsReadFileInner = props => {
+    const text = readFileResource.read()
+    return html`${text}`
+  }
+
+  const FsReadFile = props => {
+    return html`
+    <div class="red-box">
+      <h3>Your index.js:</h3>
+      <${React.Suspense} fallback=${html`<p>Now Loading...</p>`}>
+        <${FsReadFileInner} />
+      <//>
+    </div>
+    `
+  }
+
+  //
+  const readDirResource = wrapPromise((async() => {
+    const fs = await require('fs')
+    return await fs.readdir('')
+  })())
+
+  const FsReadDirInner = props => {
+    const dir = readDirResource.read()
+    const files = dir.map((item, index) => html`<div key=${index}>${item.name} ${item.isDirectory() ? '<DIR>' : ''}</div>`)
+    return html`${files}`
+  }
+
+  const FsReadDir = props => {
+    return html`
+    <div class="red-box">
+      <h3>Your dogroot directory:</h3>
+      <${React.Suspense} fallback=${html`<p>Now Loading...</p>`}>
+        <${FsReadDirInner} />
+      <//>
+    </div>
+    `
+  }
+
+  //
+  let fromRestApiResource = false
+
+  const FromRestApiInner = props => {
+    const json = fromRestApiResource.read()
+    const posts = json.data.children.map((child) => child.data);
+    return html`
+    <ul>
+      ${posts.map((post, i) => html`<li key={i}>${post.title}</li>`)}
+    </ul>
+    `
+  }
+
+  const FromRestApi = props => {
+
+    fromRestApiResource = wrapPromise((async() => {
+      try {
+        const res = await fetch('https://www.reddit.com/r/reactjs.json',
+          //{mode: 'cors', credentials: 'include'}, 
+        )
+        const json = await res.json()
+        return json
+      } catch (e) {
+        return e.message
+      }
+    })())
+
+    const redrawMe = React.useState()[1]
+    
+    return html`
+    <div class="red-box">
+      From Rest API:
+      <${React.Suspense} fallback=${html`<p>Now Loading...</p>`}>
+        <button onClick=${() => redrawMe([])}>
+          Update
+        </button>
+        <${FromRestApiInner} />
+      <//>
+    </div>
+    `
+  }
+
+  //
+  const elm = html`
+  <h1>BeBop framework</h1>
+  
+  <div class="parallax" style=${{
+    backgroundImage: 'url("/images/parallax1.jpeg")',
+    height: '100%',
+  }}>
+    <div class="caption">
+      <span class="border">SCROLL DOWN</span>
+    </div>
+  </div>
+
+  <${ClickCounter}/>
+  
+  <${React.Suspense} fallback=${html`<p>Now Loading...</p>`}>
+    <${Tools}/>
+  <//>
+  
+  <${FsReadFile}/>
+  <${FsReadDir}/>
+  
+  <p>⇒ <a href="javascript:void(0)" onClick=${e=>location.href = '/download.html'}>Nice Downloader</a></p>
+  <p>⇒ <a href="https://magpcss.org/ceforum/apidocs3/index-overview-summary.html">CEF3 C++ API Docs</a></p>
+  <p>⇒ <a href="https://cef-builds.spotifycdn.com/index.html">Chromium Embedded Framework (CEF) Automated Builds</a></p>
+
+  <${FromRestApi}/>
+  
+  <div class="parallax" style=${{
+    backgroundImage: 'url("/images/parallax2.jpeg")',
+    height: '100%',
+  }}>
+    <div class="caption">
+      <span class="border">SCROLL UP</span>
+    </div>
+  </div>
+
+  `
+  
+  //
+  const style1 = css`
+    & {
+      padding: 30px 30px;
+      background-color: black;
+    }
+    button {
+      background: palevioletred;
+      color: white;
+      border-radius: 3px;
+      border: 2px solid palevioletred;
+      margin: 0 1em;
+      padding: 0.25em 1em;
+    }
+  `
+
+  const style2 = css`
+    button {
+      background: transparent;
+      color: palevioletred;
+      border-radius: 3px;
+      border: 2px solid palevioletred;
+      margin: 0 1rem;
+      padding: 0.25rem 1rem;
+    }
+  `
+
+  injectGlobal`
+  body {
+    font-size: 16px;  /* = 1rem */
+    font-family: "Open Sans", Verdana, Roboto, "Droid Sans", "ヒラギノ角ゴ ProN W3", "Hiragino Kaku Gothic ProN", "メイリオ", Meiryo, sans-serif;
+    color: rgba(0,0,0,.87);
+    background-color: white;
+  }
+
+  .red-box {
+    white-space: pre-wrap;
+    border: 2px solid tomato;
+    margin-bottom: 1rem;
+    padding: 0.25rem 1rem;
+  }
+
+  .parallax { 
+    position: relative;
+    min-height: 100vh; 
+    opacity: .7;
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+
+    .caption {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 100%;
+      text-align: center;
+
+      span.border {
+        background-color: black;
+        color: white;
+        padding: 18px;
+        font-size: 20px;
+        letter-spacing: 10px;
+      }
+    }
+
+    .title {
+      position: absolute;
+      left: 0;
+      top: 75%;
+      width: 100%;
+      text-align: center;
+      color: black;
+      font-size: 20px;
+      letter-spacing: 10px;
+    }
+  }  
+  `
+
+  //
+  ReactDOM.render(elm, document.getElementById('App'))
+
+  //
+  {
+    // Load from the sessionStorage
+    const storageName = 'GTY'
+    let info = {}
+    const store = window.sessionStorage.getItem(storageName)
+    if (store) info = JSON.parse(store)
+    
+    if (info.dontShow !== true) {
+      const {app, screen, mainform} = bebop
+      app.showMessage('Hello, こんにちは、'
+        +await mainform.width +'x'+await mainform.height+', '+ await screen.workAreaWidth+'x'+ await screen.workAreaHeight
+      )
+      info.dontShow = true
+    }
+
+    // Save to the sessinStorage
+    window.sessionStorage.setItem(
+      storageName, JSON.stringify(info)
+    )
+
+    document.addEventListener("keydown", e => {
+      // You can stop its default behavior with the preventDefault()                                            
+      switch (e.keyCode) {
+        case 8:   /* BackSpace */
+        // case 116: /* F5*/
+        // case 123: /* F12*/
+          e.preventDefault()
+          break;
+      } 
+    }, false);
+  }
+
+</script>
+
+</html>

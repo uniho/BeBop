@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Test</title>
+</head>
+
+<body>
+  <div id="App"></div>
+</body>
+
+<script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/htm"></script>
+
+<script type="module">
+
+  // Emotion is a performant and flexible CSS-in-JS library. 
+  // https://github.com/emotion-js/emotion
+  import {css, injectGlobal} from 'https://cdn.skypack.dev/@emotion/css?min'
+
+  // htm is JSX-like syntax in plain JavaScript - no transpiler necessary.
+  // https://github.com/developit/htm
+  const html = htm.bind(React.createElement)
+
+  // Unlike the NodeJS, require() return a type of Promise.
+  // If you want a synchronous processing, you can choose requireSync().
+  // But don't forget synchronous methods will often block UIs.
+  const process = requireSync('process')
+
+  //
+  const TestEnv = props => {
+    
+    const items = Object.entries(process.env).map(([key, val], index) => html`
+    <div key=${index}>
+      ${key} = ${val}
+    </div>
+    `)
+
+    return html`
+    <div class="red-box" >
+      <div>env:</div>
+      ${items}
+    </div>
+    `
+  }
+
+  //
+  injectGlobal`
+  body {
+    font-size: 16px;  /* = 1rem */
+    font-family: "Open Sans", Verdana, Roboto, "Droid Sans", "ヒラギノ角ゴ ProN W3", "Hiragino Kaku Gothic ProN", "メイリオ", Meiryo, sans-serif;
+    color: rgba(0,0,0,.87);
+    background-color: white;
+  }
+
+  .red-box {
+    white-space: pre-wrap;
+    word-break: break-all;
+    border: 2px solid tomato;
+    margin: 1rem;
+    padding: 0.25rem 1rem;
+  }
+  `
+
+  const elm = html`
+    <${TestEnv}/>
+  `
+  
+  ReactDOM.render(elm, document.getElementById('App'))
+
+</script>
+
+</html>

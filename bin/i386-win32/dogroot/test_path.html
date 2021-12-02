@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Test</title>
+</head>
+
+<body>
+  <div id="App"></div>
+</body>
+
+<script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/htm"></script>
+
+<script type="module">
+
+  // Emotion is a performant and flexible CSS-in-JS library. 
+  // https://github.com/emotion-js/emotion
+  import {css, injectGlobal} from 'https://cdn.skypack.dev/@emotion/css?min'
+
+  // htm is JSX-like syntax in plain JavaScript - no transpiler necessary.
+  // https://github.com/developit/htm
+  const html = htm.bind(React.createElement)
+
+  // Unlike the NodeJS, require() return a type of Promise.
+  // If you want a synchronous processing, you can choose requireSync().
+  // But don't forget synchronous methods will often block UIs.
+  const path = requireSync('path')
+
+  //
+  const TestDirname = props => {
+    
+    const dirs = [
+      'c:\\test\\root\\index.html',
+      '/test/root/index.html',
+      '/test',
+      'c:\\test',
+      '/usr/bin/',
+      '/usr/bin',
+      'c:\\',
+      '/',
+    ]
+
+    const items = dirs.map((v, index) => html`
+    <div key=${index}>
+      dirname("${v}") ⇒ ${
+        path.dirname(v)
+      }
+    </div>
+    `)
+
+    return html`
+    <div class="red-box" >
+      ${items}
+    </div>
+    `
+  }
+
+  //
+  const TestBasename = props => {
+    
+    const names = [
+      ['c:\\test\\root\\index.html', ''],
+      ['/test/root/index.html', ''],
+      ['c:\\test\\root\\index.html', '.html'],
+      ['/test/root/index.html', 'l'],
+      ['/test/root/index.html', '.htm'],
+      ['/test/root/index.html', 'index.html'],
+      ['/test', ''],
+      ['c:\\test', ''],
+      ['/usr/bin/', ''],
+      ['/usr/bin', ''],
+      ['c:\\', ''],
+      ['/', ''],
+    ]
+
+    const items = names.map((v, index) => html`
+    <div key=${index}>
+      basename("${v.join('", "')}") ⇒ ${
+        path.basename(v[0], v[1])
+      }
+    </div>
+    `)
+
+    return html`
+    <div class="red-box" >
+      ${items}
+    </div>
+    `
+  }
+
+  //
+  const TestJoin = props => {
+    
+    const names = [
+      ['c:\\', 'test', 'root', 'index.html'],
+      ['c:', 'test\\', '\\root', 'index.html'],
+      ['c:\\test\\', 'root', '\\index.html'],
+      ['/', 'test/root/index.html'],
+      ['/', 'test', 'root', 'index.html'],
+    ]
+
+    const items = names.map((v, index) => html`
+    <div key=${index}>
+      join("${v.join('", "')}") ⇒ ${
+        path.join(...v)
+      }
+    </div>
+    `)
+
+    return html`
+    <div class="red-box" >
+      ${items}
+    </div>
+    `
+  }
+
+  //
+  const TestResolve = props => {
+    
+    const names = [
+      ['index.html'],
+      ['\\index.html'],
+      ['/index.html'],
+      ['.\\index.html'],
+      ['./index.html'],
+
+      ['test\\index.html'],
+      ['\\test\\index.html'],
+      ['/test/index.html'],
+      ['.\\test\\index.html'],
+      ['./test/index.html'],
+
+      ['test\\index.html', 'c:\\root'],
+      ['\\test\\index.html', 'c:\\root'],
+      ['/test/index.html', '/root/'],
+      ['.\\test\\index.html', 'c:\\root'],
+      ['./test/index.html', '/root'],
+    ]
+
+    const items = names.map((v, index) => html`
+    <div key=${index}>
+      resolve("${v.join('", "')}") ⇒ ${
+        path.resolve(...v)
+      }
+    </div>
+    `)
+
+    return html`
+    <div class="red-box" >
+      ${items}
+    </div>
+    `
+  }
+
+  //
+  const TestRelative = props => {
+    
+    const names = [
+      ['c:\\root', 'c:\\root\\test\\index.html'],
+      ['c:\\root', '\\test\\index.html'],
+      ['c:\\root\\test1', 'c:\\root\\test2\\index.html'],
+      ['/root/', '/test/index.html'],
+    ]
+
+    const items = names.map((v, index) => html`
+    <div key=${index}>
+      relative("${v.join('", "')}") ⇒ ${
+        path.relative(...v)
+      }
+    </div>
+    `)
+
+    return html`
+    <div class="red-box" >
+      ${items}
+    </div>
+    `
+  }
+
+  //
+  const TestIsAbsolute = props => {
+    
+    const names = [
+      'c:\\root\\test\\index.html',
+      '\\test\\index.html',
+      'c:\\root\\test2\\index.html',
+      '/test/index.html',
+    ]
+
+    const items = names.map((v, index) => html`
+    <div key=${index}>
+      isAbsolute("${v}") ⇒ ${
+        path.isAbsolute(v) ? 'true' : 'false'
+      }
+    </div>
+    `)
+
+    return html`
+    <div class="red-box" >
+      ${items}
+    </div>
+    `
+  }
+
+  //
+  injectGlobal`
+  body {
+    font-size: 16px;  /* = 1rem */
+    font-family: "Open Sans", Verdana, Roboto, "Droid Sans", "ヒラギノ角ゴ ProN W3", "Hiragino Kaku Gothic ProN", "メイリオ", Meiryo, sans-serif;
+    color: rgba(0,0,0,.87);
+    background-color: white;
+  }
+
+  .red-box {
+    white-space: pre-wrap;
+    word-break: break-all;
+    border: 2px solid tomato;
+    margin: 1rem;
+    padding: 0.25rem 1rem;
+  }
+  `
+
+  const elm = html`
+    <${TestDirname}/>
+    <${TestBasename}/>
+    <${TestJoin}/>
+    <${TestResolve}/>
+    <${TestRelative}/>
+    <${TestIsAbsolute}/>
+  `
+  
+  ReactDOM.render(elm, document.getElementById('App'))
+
+</script>
+
+</html>

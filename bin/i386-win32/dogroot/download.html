@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Sample でも</title>
+</head>
+
+<body>
+  <div id="App"></div>
+</body>
+
+<script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/htm"></script>
+
+<script type="module">
+
+  import Download from '/download.js'
+
+  // htm is JSX-like syntax in plain JavaScript - no transpiler necessary.
+  // https://github.com/developit/htm
+  window.html = htm.bind(React.createElement)
+
+  // Render-as-You-Fetch
+  // https://reactjs.org/docs/concurrent-mode-suspense.html#approach-3-render-as-you-fetch-using-suspense
+  window.wrapPromise = promise => {
+    let status = "pending";
+    let result;
+    const suspender = promise.then(
+      r => {
+        status = "success";
+        result = r;
+      },
+      e => {
+        status = "error";
+        result = e;
+      }
+    );
+    return {
+      read() {
+        if (status === "pending") {
+          throw suspender;
+        } else if (status === "error") {
+          throw result;
+        } else if (status === "success") {
+          return result;
+        }
+      }
+    };
+  }
+
+  const elm = html`
+  <h1>Nice Downloader(Audio only)</h1>
+  <p>＜ <a href="javascript:void(0)" onClick=${async e=>{
+    const bebop = await require("bebop")
+    bebop.browser.goBack()
+  }}>Back</a></p>
+  <${Download}/>
+  `
+  
+  ReactDOM.render(elm, document.getElementById("App"))
+
+</script>
+
+</html>

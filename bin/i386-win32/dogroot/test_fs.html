@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Test</title>
+</head>
+
+<body>
+  <div id="App"></div>
+</body>
+
+<script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/htm"></script>
+
+<script type="module">
+
+  // Emotion is a performant and flexible CSS-in-JS library. 
+  // https://github.com/emotion-js/emotion
+  import {css, injectGlobal} from 'https://cdn.skypack.dev/@emotion/css?min'
+
+  // htm is JSX-like syntax in plain JavaScript - no transpiler necessary.
+  // https://github.com/developit/htm
+  const html = htm.bind(React.createElement)
+
+  // Render-as-You-Fetch
+  // https://reactjs.org/docs/concurrent-mode-suspense.html#approach-3-render-as-you-fetch-using-suspense
+  const wrapPromise = promise => {
+    let status = "pending";
+    let result;
+    const suspender = promise.then(
+      r => {
+        status = "success";
+        result = r;
+      },
+      e => {
+        status = "error";
+        result = e;
+      }
+    );
+    return {
+      read() {
+        if (status === "pending") {
+          throw suspender;
+        } else if (status === "error") {
+          throw result;
+        } else if (status === "success") {
+          return result;
+        }
+      }
+    };
+  }
+
+  // Unlike the NodeJS, require() return a type of Promise.
+  // If you want a synchronous processing, you can choose requireSync().
+  // But don't forget synchronous methods will often block UIs.
+  const fs = requireSync('fs')
+  const util = requireSync('util')
+
+  //
+  const testReadWriteFileResource = wrapPromise((async() => {
+    const tmp1 = await fs.readFile('./index.js')
+    await fs.writeFile('./.tmp.tmp', tmp1)
+    const text1 = await fs.readFile('./.tmp.tmp')
+
+    const tmp2 = await fs.readFile('./index.js', {codePage: 0})
+    await fs.writeFile('./.tmp.tmp', tmp2)
+    const array = await fs.readFile('./.tmp.tmp', {codePage: 0})
+    const text2 = util.SetCodePage(array, 65001/*utf8*/)
+    return {text1, text2};
+  })())
+
+  const TestReadWriteFileInner = props => {
+    const {text1, text2} = testReadWriteFileResource.read()
+    return html`
+    <div class="red-box" >
+      ${text1}
+    </div>
+    <div class="red-box" >
+      ${text2}
+    </div>
+    `
+  }
+
+  const TestReadWriteFile = props => {
+    return html`
+    <${React.Suspense} fallback=${html`<p>Now Loading...</p>`}>
+      <${TestReadWriteFileInner} />
+    <//>
+    `
+  }
+
+  //
+  const testReadWriteResource = wrapPromise((async() => {
+    const file1 = await fs.open('./index.html')
+    const file2 = await fs.open('./.tmp2.tmp', 'w')
+    try {
+      const buf = new Uint8Array(await file1.size())
+      let p = 0
+      while (1) {
+        const arr = await file1.read(10)
+        if (!arr) break;
+        buf.set(new Uint8Array(arr), p)
+        p += arr.byteLength
+        await file2.write(arr)
+      }
+      const text1 = util.SetCodePage(buf.buffer, 65001/*utf8*/)
+
+      await file2.seek(0)
+      const arr = await file2.read(file2.size())
+      const text2 = util.SetCodePage(arr, 65001/*utf8*/)
+      return {text1, text2};
+    } finally {
+      await file1.close()
+      await file2.close()
+    }
+  })())
+
+  const TestReadWriteInner = props => {
+    const {text1, text2} = testReadWriteResource.read()
+    return html`
+    <div class="red-box" >
+      ${text1}
+    </div>
+    <div class="red-box" >
+      ${text2}
+    </div>
+    `
+  }
+
+  const TestReadWrite = props => {
+    return html`
+    <${React.Suspense} fallback=${html`<p>Now Loading...</p>`}>
+      <${TestReadWriteInner} />
+    <//>
+    `
+  }
+
+  //
+  injectGlobal`
+  body {
+    font-size: 16px;  /* = 1rem */
+    font-family: "Open Sans", Verdana, Roboto, "Droid Sans", "ヒラギノ角ゴ ProN W3", "Hiragino Kaku Gothic ProN", "メイリオ", Meiryo, sans-serif;
+    color: rgba(0,0,0,.87);
+    background-color: white;
+  }
+
+  .red-box {
+    white-space: pre-wrap;
+    word-break: break-all;
+    border: 2px solid tomato;
+    margin: 1rem;
+    padding: 0.25rem 1rem;
+  }
+  `
+
+  const elm = html`
+    <${TestReadWriteFile}/>
+    <${TestReadWrite}/>
+  `
+  
+  ReactDOM.render(elm, document.getElementById('App'))
+
+</script>
+
+</html>
