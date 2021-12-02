@@ -1,0 +1,13 @@
+object Form1: TForm1
+  Left = 256
+  Height = 240
+  Top = 145
+  Width = 320
+  OnClose = FormClose
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  OnKeyDown = FormKeyDown
+  OnKeyUp = FormKeyUp
+  OnShow = FormShow
+  LCLVersion = '2.2.0.2'
+end
