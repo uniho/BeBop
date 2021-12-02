@@ -1,0 +1,3 @@
+[submodule "source/extlibs/cef4delphi"]
+	path = source/extlibs/cef4delphi
+	url = https://github.com/salvadordf/CEF4Delphi.git
