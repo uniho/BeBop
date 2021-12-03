@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Sample Demo</title>
+
+  <link rel="stylesheet" type="text/css" 
+    href="https://unpkg.com/tailwindcss@^2.2/dist/tailwind.css"
+  />
+</head>
+
+<body>
+  <div id="App"></div>
+</body>
+
+<script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/htm"></script>
+<script crossorigin src="https://unpkg.com/moveable@latest/dist/moveable.min.js"></script>
+
+<script type="module">
+
+  import {main} from "/sample02.js"
+
+  // Emotion is a performant and flexible CSS-in-JS library. 
+  // https://github.com/emotion-js/emotion
+  import {css, injectGlobal} from 'https://cdn.skypack.dev/@emotion/css?min'
+  window.css = css
+  window.injectGlobal = injectGlobal
+
+  // htm is JSX-like syntax in plain JavaScript - no transpiler necessary.
+  // https://github.com/developit/htm
+  window.html = htm.bind(React.createElement)
+
+  // Render-as-You-Fetch
+  // https://reactjs.org/docs/concurrent-mode-suspense.html#approach-3-render-as-you-fetch-using-suspense
+  window.wrapPromise = promise => {
+    let status = "pending";
+    let result;
+    const suspender = promise.then(
+      r => {
+        status = "success";
+        result = r;
+      },
+      e => {
+        status = "error";
+        result = e;
+      }
+    );
+    return {
+      read() {
+        if (status === "pending") {
+          throw suspender;
+        } else if (status === "error") {
+          throw result;
+        } else if (status === "success") {
+          return result;
+        }
+      }
+    };
+  }
+
+  //
+  main()
+
+</script>
+
+</html>
