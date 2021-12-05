@@ -1,3 +1,6 @@
 [submodule "source/extlibs/cef4delphi"]
 	path = source/extlibs/cef4delphi
 	url = https://github.com/salvadordf/CEF4Delphi.git
+[submodule "source/extlibs/mORMot"]
+	path = source/extlibs/mORMot
+	url = https://github.com/synopse/mORMot.git
