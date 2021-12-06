@@ -65,7 +65,7 @@ uses
   LCLIntf, variants, LCLType, LazFileUtils,
   uCEFConstants, uCEFApplication, uCEFResourceHandler,
   uCEFMiscFunctions,
-  unit_js, unit_global, unit_thread;
+  unit_js, unit_global, unit_thread, unit_rest;
 
 {$R *.lfm}
 
@@ -506,9 +506,11 @@ type
 
   TCustomResourceHandler = class(TCefResourceHandlerOwn)
   private
+    FStatus: integer;
+    FStatusText: string;
     FFileName: string;
-    FFileStream: TFileStream;
-    FFileSize: Int64;
+    FStream: TStream;
+    isREST: boolean;
   protected
     function  open(const request: ICefRequest; var handle_request: boolean; const callback: ICefCallback): boolean; override;
     function  skip(bytes_to_skip: int64; var bytes_skipped: Int64; const callback: ICefResourceSkipCallback): boolean; override;
@@ -521,17 +523,39 @@ type
 
 function TCustomResourceHandler.open(const request: ICefRequest;
   var handle_request: boolean; const callback: ICefCallback): boolean;
+var
+  body: string;
 begin
   FFileName:= UTF8Encode(request.Url);
-  FFileName:= CreateAbsolutePath(normalizeResourceName(FFileName), dogRoot);
-  FFileSize:= 0;
+  FFileName:= normalizeResourceName(FFileName);
+
+  if Pos('~rest/', FFileName) = 1 then begin
+    isREST:= True;
+    FFileName:= Copy(FFileName, 7, Length(FFileName));
+    Result:= False;
+    try
+      body:= GetFromRestApi(FFileName, request, FStatus, FStatusText);
+      if (FStatus >= 200) and (FStatus <= 299) then begin
+        FStream:= TStringStream.Create(body);
+        if Assigned(callback) then callback.Cont;
+        Result:= True;
+      end;
+    except
+      FStatus:= 404; // HTTP_NOTFOUND
+      FStatusText:= 'Not Found';
+    end;
+    Exit;
+  end;
+
+  FFileName:= CreateAbsolutePath(FFileName, dogRoot);
   Result:= False;
   try
-    FFileStream:= TFileStream.Create(FFileName, fmOpenRead);
-    FFileSize:= FFileStream.Size;
+    FStream:= TFileStream.Create(FFileName, fmOpenRead);
     if Assigned(callback) then callback.Cont;
     Result:= True;
   except
+    FStatus:= 404; // HTTP_NOTFOUND
+    FStatusText:= 'Not Found';
   end;
 end;
 
@@ -540,7 +564,7 @@ function TCustomResourceHandler.skip(bytes_to_skip: int64;
 begin
   Result:= False;
   try
-    bytes_skipped:= FFileStream.Seek(bytes_to_skip, soBeginning);
+    bytes_skipped:= FStream.Seek(bytes_to_skip, soBeginning);
     if Assigned(callback) then callback.Cont(bytes_skipped);
     Result:= True;
   except
@@ -553,7 +577,7 @@ function TCustomResourceHandler.read(const data_out: Pointer;
 begin
   Result:= False;
   try
-    bytes_read:= FFileStream.Read(data_out^, bytes_to_read);
+    bytes_read:= FStream.Read(data_out^, bytes_to_read);
     if Assigned(callback) then callback.Cont(bytes_read);
     Result:= True;
   except
@@ -567,27 +591,33 @@ var
   ext: string;
 begin
   if (response <> nil) then begin
-    response.Status:= 200;
-    response.StatusText:= 'OK';
-    ext:= ExtractFileExt(FFileName);
-    if ext = '' then ext:= '.html';
-    Delete(ext, 1, 1);
-    response.MimeType:= CefGetMimeType(UTF8Decode(ext));
+    response.Status:= FStatus;
+    response.StatusText:= UTF8Decode(FStatusText);
+
+    if isREST then begin
+      response.MimeType:= 'application/json';
+    end else begin
+      ext:= ExtractFileExt(FFileName);
+      if ext = '' then ext:= '.html';
+      Delete(ext, 1, 1);
+      response.MimeType:= CefGetMimeType(UTF8Decode(ext));
+    end;
   end;
 
-  responseLength:= FFileSize;
+  responseLength:= FStream.Size;
 end;
 
 constructor TCustomResourceHandler.Create(const browser: ICefBrowser;
-  const frame: ICefFrame; const schemeName: ustring; const request: ICefRequest
-  );
+  const frame: ICefFrame; const schemeName: ustring; const request: ICefRequest);
 begin
+  FStatus:= 200;
+  FStatusText:= 'OK';
   inherited Create(browser, frame, schemeName, request);
 end;
 
 destructor TCustomResourceHandler.Destroy;
 begin
-  if Assigned(FFileStream) then FFileStream.Free;
+  if Assigned(FStream) then FStream.Free;
   inherited Destroy;
 end;
 

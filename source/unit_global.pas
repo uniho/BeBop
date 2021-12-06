@@ -38,7 +38,7 @@ type
 
 var
   dogroot, execPath: string;
-  ThreadList, ThreadClassList: TStringList;
+  ThreadList, ThreadClassList, RestClassList: TStringList;
   ModuleHandlerList: TStringList;
   ObjectList: TSafeStringList;
 
@@ -138,10 +138,13 @@ initialization
   ThreadList.Sorted:= True;
   ThreadClassList:= TStringList.Create;
   ThreadClassList.Sorted:= True;
+  RestClassList:= TStringList.Create;
+  RestClassList.Sorted:= True;
 finalization
   ClearPromiseThreadList();
   ThreadList.Free;
   ThreadClassList.Free;
+  RestClassList.Free;
   if Assigned(ModuleHandlerList) then ModuleHandlerList.Free;
   if Assigned(ObjectList) then ObjectList.Free;
 end.

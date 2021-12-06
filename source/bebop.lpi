@@ -32,7 +32,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="11">
+    <Units Count="12">
       <Unit0>
         <Filename Value="bebop.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -81,6 +81,10 @@
         <Filename Value="unit_mod_process.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit10>
+      <Unit11>
+        <Filename Value="unit_rest.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit11>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -90,8 +94,9 @@
       <Filename Value="../bin\$(TargetCPU)-$(TargetOS)\bebop"/>
     </Target>
     <SearchPaths>
-      <IncludeFiles Value="$(ProjOutDir);extlibs\cef4delphi\source"/>
-      <OtherUnitFiles Value="extlibs\cef4delphi\source;extlibs\lua4lazarus"/>
+      <IncludeFiles Value="$(ProjOutDir);extlibs\cef4delphi\source;extlibs\mORMot"/>
+      <Libraries Value="extlibs\mORMot\static\$(TargetCPU)-$(TargetOS)"/>
+      <OtherUnitFiles Value="extlibs\cef4delphi\source;extlibs\lua4lazarus;extlibs\mORMot;extlibs\mORMot\SQLite3"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <CodeGeneration>

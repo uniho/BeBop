@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Test</title>
+</head>
+
+<body>
+  <div id="App"></div>
+</body>
+
+<script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/htm"></script>
+
+<script type="module">
+
+  // Emotion is a performant and flexible CSS-in-JS library. 
+  // https://github.com/emotion-js/emotion
+  import {css, injectGlobal} from 'https://cdn.skypack.dev/@emotion/css?min'
+
+  // htm is JSX-like syntax in plain JavaScript - no transpiler necessary.
+  // https://github.com/developit/htm
+  const html = htm.bind(React.createElement)
+
+  // Render-as-You-Fetch
+  // https://reactjs.org/docs/concurrent-mode-suspense.html#approach-3-render-as-you-fetch-using-suspense
+  const wrapPromise = promise => {
+    let status = "pending";
+    let result;
+    const suspender = promise.then(
+      r => {
+        status = "success";
+        result = r;
+      },
+      e => {
+        status = "error";
+        result = e;
+      }
+    );
+    return {
+      read() {
+        if (status === "pending") {
+          throw suspender;
+        } else if (status === "error") {
+          throw result;
+        } else if (status === "success") {
+          return result;
+        }
+      }
+    };
+  }
+
+  //
+  const testGetResource = wrapPromise((async() => {
+    const res = await fetch('/~rest/test/who/are/you?a=1&b=2&c=3')
+    return await res.text()
+  })())
+
+  const TestGetInner = props => {
+    const text = testGetResource.read()
+    return html`
+    <div class="red-box" >
+      GET ⇒ ${text}
+    </div>
+    `
+  }
+
+  const TestGet = props => {
+    return html`
+    <${React.Suspense} fallback=${html`<p>Now Loading...</p>`}>
+      <${TestGetInner} />
+    <//>
+    `
+  }
+
+  //
+  const testPostResource = wrapPromise((async() => {
+    const res = await fetch('~rest/test/create', {
+      method: 'POST',
+      // headers: {
+      //   'Accept': 'application/json',
+      //   'Content-Type': 'application/json'
+      // },
+      body: JSON.stringify({
+        text: "abcdefg"
+      })
+    })
+    return await res.text()
+  })())
+
+  const TestPostInner = props => {
+    const text = testPostResource.read()
+    return html`
+    <div class="red-box" >
+      POST ⇒ ${text}
+    </div>
+    `
+  }
+
+  const TestPost = props => {
+    return html`
+    <${React.Suspense} fallback=${html`<p>Now Loading...</p>`}>
+      <${TestPostInner} />
+    <//>
+    `
+  }
+
+  //
+  const testGetDirectResource = wrapPromise((async() => {
+    const res = await fetch('/~rest/test/direct/')
+    return await res.text()
+  })())
+
+  const TestGetDirectInner = props => {
+    const text = testGetDirectResource.read()
+    return html`
+    <div class="red-box" >
+      Direct ⇒ ${text}
+    </div>
+    `
+  }
+
+  const TestGetDirect = props => {
+    return html`
+    <${React.Suspense} fallback=${html`<p>Now Loading...</p>`}>
+      <${TestGetDirectInner} />
+    <//>
+    `
+  }
+
+  //
+  const resrSQLitePath = '/~rest/test-sqlite'
+
+  const updateSQLiteResource = async() => {
+    const res = await fetch(`${resrSQLitePath}/musictable/?select=*`)
+    return await res.text()
+  }
+
+  let testSQLiteResource = wrapPromise(updateSQLiteResource())
+
+  const TestSQLiteInner = props => {
+    const text = testSQLiteResource.read()
+    return html`
+    <div class="red-box" >
+      ${text}
+    </div>
+    `
+  }
+
+  const TestSQLite = props => {
+    const [, redrawSub] = React.useState()
+    const redraw = () => redrawSub({})
+
+    const insert = async () => {
+      await fetch(`${resrSQLitePath}/musictable/`, {
+        method: 'POST',
+        body: JSON.stringify({
+          title: "Shangri-La", artist: "Denki Groove", released: "1997/9/19",
+        })
+      })
+
+      testSQLiteResource = wrapPromise(updateSQLiteResource())
+      redraw()
+    }
+
+    const remove = async () => {
+      const res = await fetch(`${resrSQLitePath}/musictable/?select=*`)
+      if (!res.ok) return;
+      const json = await res.json()
+      if (!json.length) return;
+
+      await fetch(`${resrSQLitePath}/musictable/${json[0].ID}`, {
+        method: 'DELETE',
+      })
+
+      testSQLiteResource = wrapPromise(updateSQLiteResource())
+      redraw()
+    }
+
+    const update = async () => {
+      const res = await fetch(`${resrSQLitePath}/musictable/?select=*`)
+      if (!res.ok) return;
+      const json = await res.json()
+      if (!json.length) return;
+
+      await fetch(`${resrSQLitePath}/musictable/${json[0].ID}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          title: "Let's Go Crazy", artist: "Prince", released: "1984/7/29",
+        })
+      })
+
+      testSQLiteResource = wrapPromise(updateSQLiteResource())
+      redraw()
+    }
+
+    return html`<${React.Fragment}>
+    <${React.Suspense} fallback=${html`<p>Now Loading...</p>`}>
+      <${TestSQLiteInner} />
+    <//>
+    <button onClick=${e => insert()}>
+      Insert Record
+    </button>
+    <button onClick=${e => remove()}>
+      Remove Record
+    </button>
+    <button onClick=${e => update()}>
+      Update Record
+    </button>
+    `
+  }
+
+  //
+  injectGlobal`
+  body {
+    font-size: 16px;  /* = 1rem */
+    font-family: "Open Sans", Verdana, Roboto, "Droid Sans", "ヒラギノ角ゴ ProN W3", "Hiragino Kaku Gothic ProN", "メイリオ", Meiryo, sans-serif;
+    color: rgba(0,0,0,.87);
+    background-color: white;
+  }
+
+  .red-box {
+    white-space: pre-wrap;
+    word-break: break-all;
+    border: 2px solid tomato;
+    margin: 1rem;
+    padding: 0.25rem 1rem;
+  }
+  `
+
+  const elm = html`
+    <${TestGet}/>
+    <${TestPost}/>
+    <${TestGetDirect}/>
+    <${TestSQLite}/>
+  `
+  
+  ReactDOM.render(elm, document.getElementById('App'))
+
+</script>
+
+</html>

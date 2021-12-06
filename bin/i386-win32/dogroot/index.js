@@ -24,6 +24,8 @@ export const main = async props => {
     browser.loadURL('test_fs.html')
   } else if (__argv.indexOf('-test_util') >= 0) {
     browser.loadURL('test_util.html')
+  } else if (__argv.indexOf('-test_rest') >= 0) {
+    browser.loadURL('test_rest.html')
   } else {
     browser.loadURL('sample01.html')
   }
