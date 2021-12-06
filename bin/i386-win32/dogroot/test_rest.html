@@ -55,7 +55,7 @@
 
   //
   const testGetResource = wrapPromise((async() => {
-    const res = await fetch('/~rest/test/who/are/you?a=1&b=2&c=3')
+    const res = await fetch(`${__restroot}/test/who/are/you?a=1&b=2&c=3`)
     return await res.text()
   })())
 
@@ -78,7 +78,7 @@
 
   //
   const testPostResource = wrapPromise((async() => {
-    const res = await fetch('~rest/test/create', {
+    const res = await fetch(`${__restroot}/test/create`, {
       method: 'POST',
       // headers: {
       //   'Accept': 'application/json',
@@ -110,8 +110,12 @@
 
   //
   const testGetDirectResource = wrapPromise((async() => {
-    const res = await fetch('/~rest/test/direct/')
-    return await res.text()
+    try {
+      const res = await fetch(`${__restroot}/test/direct/`)
+      return await res.text()
+    } catch(e) {
+      return e.message + '. Push F5 key.'
+    }
   })())
 
   const TestGetDirectInner = props => {
@@ -132,7 +136,7 @@
   }
 
   //
-  const resrSQLitePath = '/~rest/test-sqlite'
+  const resrSQLitePath = `${__restroot}/test-sqlite`
 
   const updateSQLiteResource = async() => {
     const res = await fetch(`${resrSQLitePath}/musictable/?select=*`)

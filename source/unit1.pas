@@ -131,6 +131,7 @@ end;
 procedure TForm1.FormCreate(Sender: TObject);
 const
   dogrootDefault = 'dogroot';
+  restrootDefault = '~rest';
 var
   s, s1: string;
   i: integer;
@@ -147,6 +148,10 @@ begin
       i:= sl.IndexOfName('dogroot');
       if i >= 0 then sl.GetNameValue(i, s1, s);
       dogroot:= IncludeTrailingPathDelimiter(CreateAbsolutePath(s, execPath));
+
+      restroot:= restrootDefault;
+      i:= sl.IndexOfName('restroot');
+      if i >= 0 then sl.GetNameValue(i, s1, restroot);
 
       s:= GetDefaultCEFUserAgent;
       i:= sl.IndexOfName('UserAgent');
@@ -439,6 +444,7 @@ procedure TForm1.ChromiumProcessMessageReceived(Sender: TObject;
      + 'const v=window.' + G_VAR_IN_JS_NAME + '={};'
      + 'v._ipc={};'
      + 'window.__dogroot = ' + StringPasToJS(dogroot) + ';'
+     + 'window.__restroot = ' + StringPasToJS(restroot) + ';'
      + 'window.__execPath = ' + StringPasToJS(execPath) + ';'
      + 'window.__argv = ' + argv + ';'
      + '}'
@@ -529,7 +535,7 @@ begin
   FFileName:= UTF8Encode(request.Url);
   FFileName:= normalizeResourceName(FFileName);
 
-  if Pos('~rest/', FFileName) = 1 then begin
+  if Pos(restroot + '/', FFileName) = 1 then begin
     isREST:= True;
     FFileName:= Copy(FFileName, 7, Length(FFileName));
     Result:= False;

@@ -37,7 +37,7 @@ type
   end;
 
 var
-  dogroot, execPath: string;
+  dogroot, restroot, execPath: string;
   ThreadList, ThreadClassList, RestClassList: TStringList;
   ModuleHandlerList: TStringList;
   ObjectList: TSafeStringList;
