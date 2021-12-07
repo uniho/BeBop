@@ -308,9 +308,6 @@ var
   anExitStatus, len: integer;
   option, dic: ICefDictionaryValue;
   wait, waitc: integer;
-  bytesread : integer;
-  outputlength, stderrlength : integer;
-  stderrbytesread : integer;
   available1, available2: boolean;
 begin
   dic:= CefObject.GetDictionary;
@@ -335,57 +332,73 @@ begin
     end;
     if wait < 100 then wait:= 100;
 
-    try
-      bytesread:= 0;
-      outputlength:= 0;
-      stderrbytesread:= 0;
-      stderrlength:= 0;
-      if not Self.Terminated and (poUsePipes in pro.Options) then begin
-        if pro.Running then begin
-          // Only call ReadFromStream if Data from corresponding stream
-          // is already available, otherwise, on  linux, the read call
-          // is blocking, and thus it is not possible to be sure to handle
-          // big data amounts bboth on output and stderr pipes. PM.
-          len:= pro.output.NumBytesAvailable;
-          available1:= len > 0;
-          if available1 then begin
-            //available1:= pro.ReadInputStream(pro.output,BytesRead,OutputLength,OutputString,1);
+    if not Self.Terminated and (poUsePipes in pro.Options) then begin
+      if pro.Running then begin
+        // Only call ReadFromStream if Data from corresponding stream
+        // is already available, otherwise, on  linux, the read call
+        // is blocking, and thus it is not possible to be sure to handle
+        // big data amounts bboth on output and stderr pipes. PM.
+        len:= pro.output.NumBytesAvailable;
+        available1:= len > 0;
+        if available1 then begin
+          //available1:= pro.ReadInputStream(pro.output,BytesRead,OutputLength,OutputString,1);
+          try
             SetLength(OutputString, len);
-            BytesRead:= pro.output.Read(OutputString[1], len);
+            len:= pro.output.Read(OutputString[1], len);
+            SetLength(OutputString, len);
+          except
+            OutputString:= '';
           end;
+        end;
 
-          // The check for assigned(P.stderr) is mainly here so that
-          // if we use poStderrToOutput in p.Options, we do not access invalid memory.
-          available2:= not Self.Terminated and assigned(pro.stderr) and (pro.stderr.NumBytesAvailable > 0);
-          if available2 then begin
-            //  available2:= pro.ReadInputStream(pro.StdErr,StdErrBytesRead,StdErrLength,StdErrString,1);
+        // The check for assigned(P.stderr) is mainly here so that
+        // if we use poStderrToOutput in p.Options, we do not access invalid memory.
+        available2:= not Self.Terminated and assigned(pro.stderr) and (pro.stderr.NumBytesAvailable > 0);
+        if available2 then begin
+          //  available2:= pro.ReadInputStream(pro.StdErr,StdErrBytesRead,StdErrLength,StdErrString,1);
+          try
             len:= pro.stderr.NumBytesAvailable;
             SetLength(StdErrString, len);
-            StdErrBytesRead:= pro.stderr.Read(StdErrString[1], len);
+            len:= pro.stderr.Read(StdErrString[1], len);
+            SetLength(StdErrString, len);
+          except
+            StdErrString:= '';
           end;
-
-          if not available1 and not available2 then begin
-            waitc:= wait div 100;
-            while not Self.Terminated and (waitc > 0) do begin
-              Sleep(100);
-              Dec(waitc);
-            end;
-          end;
-
-        end else begin
-          anExitStatus:= pro.exitstatus;
-          // Get left output after end of execution
-          pro.ReadInputStream(pro.output,BytesRead,OutputLength,OutputString,1);
-          setlength(outputstring,BytesRead);
-          if assigned(pro.stderr) and not Self.Terminated then
-            pro.ReadInputStream(pro.StdErr,StdErrBytesRead,StdErrLength,StdErrString,1);
-          setlength(stderrstring,StderrBytesRead);
         end;
-      end;
-    except
-      on e: Exception do begin
-        setlength(outputstring,BytesRead);
-        setlength(stderrstring,StderrBytesRead);
+
+        if not available1 and not available2 then begin
+          waitc:= wait div 100;
+          while not Self.Terminated and (waitc > 0) do begin
+            Sleep(100);
+            Dec(waitc);
+          end;
+        end;
+
+      end else begin
+        anExitStatus:= pro.exitstatus;
+        // Get left output after end of execution
+        //pro.ReadInputStream(pro.output,BytesRead,OutputLength,OutputString,1);
+        len:= pro.output.NumBytesAvailable;
+        if len > 0 then begin
+          try
+            SetLength(OutputString, len);
+            len:= pro.output.Read(OutputString[1], len);
+            SetLength(OutputString, len);
+          except
+            OutputString:= '';
+          end;
+        end;
+        if assigned(pro.stderr) and not Self.Terminated and (pro.stderr.NumBytesAvailable > 0) then begin
+          //pro.ReadInputStream(pro.StdErr,StdErrBytesRead,StdErrLength,StdErrString,1);
+          try
+            len:= pro.stderr.NumBytesAvailable;
+            SetLength(StdErrString, len);
+            len:= pro.stderr.Read(StdErrString[1], len);
+            SetLength(StdErrString, len);
+          except
+            StdErrString:= '';
+          end;
+        end;
       end;
     end;
 
