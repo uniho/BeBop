@@ -305,7 +305,7 @@ var
   OutputString, StdErrString: string;
   obj: TObject;
   pro: TProcess;
-  anExitStatus: integer;
+  anExitStatus, len: integer;
   option, dic: ICefDictionaryValue;
   wait, waitc: integer;
   bytesread : integer;
@@ -346,13 +346,23 @@ begin
           // is already available, otherwise, on  linux, the read call
           // is blocking, and thus it is not possible to be sure to handle
           // big data amounts bboth on output and stderr pipes. PM.
-          available1:= pro.ReadInputStream(pro.output,BytesRead,OutputLength,OutputString,1);
+          len:= pro.output.NumBytesAvailable;
+          available1:= len > 0;
+          if available1 then begin
+            //available1:= pro.ReadInputStream(pro.output,BytesRead,OutputLength,OutputString,1);
+            SetLength(OutputString, len);
+            BytesRead:= pro.output.Read(OutputString[1], len);
+          end;
+
           // The check for assigned(P.stderr) is mainly here so that
           // if we use poStderrToOutput in p.Options, we do not access invalid memory.
-          available2:= False;
-          if assigned(pro.stderr) and not Self.Terminated then
-            available2:= pro.ReadInputStream(pro.StdErr,StdErrBytesRead,StdErrLength,StdErrString,1);
-
+          available2:= not Self.Terminated and assigned(pro.stderr) and (pro.stderr.NumBytesAvailable > 0);
+          if available2 then begin
+            //  available2:= pro.ReadInputStream(pro.StdErr,StdErrBytesRead,StdErrLength,StdErrString,1);
+            len:= pro.stderr.NumBytesAvailable;
+            SetLength(StdErrString, len);
+            StdErrBytesRead:= pro.stderr.Read(StdErrString[1], len);
+          end;
 
           if not available1 and not available2 then begin
             waitc:= wait div 100;
