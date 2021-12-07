@@ -39,13 +39,9 @@ function TRestApi.get: string;
   begin
     cp:= TSQLDBSQLite3ConnectionProperties.Create(dogroot + '.test.sqlite', '', '', '');
     try
-      rows:= cp.Execute('SELECT * FROM MusicTable', []);
-      try
-        Result:= rows.FetchAllAsJSON(True, @rowCount);
-        if rowCount = 0 then Result:= '[]';
-      finally
-        rows:= nil; // Why bother? This is because, needs to free before `cp.Free`!
-      end;
+      rows:= cp.ExecuteInlined('SELECT * FROM MusicTable', [], True);
+      Result:= rows.FetchAllAsJSON(True, @rowCount);
+      if rowCount = 0 then Result:= '[]';
     finally
       cp.Free;
     end;
