@@ -13,9 +13,9 @@ uses
 
 type
 
-  { TRestApi }
+  { TRestApiBase }
 
-  TRestApi = class(TObject)
+  TRestApiBase = class(TObject)
   private
   protected
     Status: integer;
@@ -33,7 +33,7 @@ type
     destructor Destroy; override;
   end;
 
-  TRestApiClass = class of TRestApi;
+  TRestApiClass = class of TRestApiBase;
 
 procedure AddRestApiClass(const restName: string; baseClass: TRestApiClass);
 
@@ -57,7 +57,7 @@ end;
 
 function GetFromRestApi(const url: string; request: ICefRequest; var status: integer; var statusText: string): string;
 var
-  rest: TRestApi;
+  rest: TRestApiBase;
   i, len: integer;
   restName, path, s: string;
   bodys: TCefPostDataElementArray;
@@ -139,44 +139,44 @@ begin
   end;
 end;
 
-{ TRestApi }
+{ TRestApiBase }
 
-function TRestApi.get: string;
+function TRestApiBase.get: string;
 begin
   Status:= 400; // HTTP_BADREQUEST
   StatusText:= 'Bad Request';
   Result:= '';
 end;
 
-function TRestApi.post: string;
+function TRestApiBase.post: string;
 begin
   Status:= 400; // HTTP_BADREQUEST
   StatusText:= 'Bad Request';
   Result:= '';
 end;
 
-function TRestApi.put: string;
+function TRestApiBase.put: string;
 begin
   Status:= 400; // HTTP_BADREQUEST
   StatusText:= 'Bad Request';
   Result:= '';
 end;
 
-function TRestApi.patch: string;
+function TRestApiBase.patch: string;
 begin
   Status:= 400; // HTTP_BADREQUEST
   StatusText:= 'Bad Request';
   Result:= '';
 end;
 
-function TRestApi.delete: string;
+function TRestApiBase.delete: string;
 begin
   Status:= 400; // HTTP_BADREQUEST
   StatusText:= 'Bad Request';
   Result:= '';
 end;
 
-constructor TRestApi.Create;
+constructor TRestApiBase.Create;
 begin
   Status:= 200; // HTTP_SUCCESS
   StatusText:= 'OK';
@@ -185,7 +185,7 @@ begin
   inherited Create;
 end;
 
-destructor TRestApi.Destroy;
+destructor TRestApiBase.Destroy;
 begin
   QueryList.Free;
   inherited Destroy;

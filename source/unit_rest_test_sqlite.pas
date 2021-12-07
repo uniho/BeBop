@@ -17,9 +17,9 @@ const
 
 type
 
-  { TSqliteRestApi }
+  { TRestApi }
 
-  TSqliteRestApi = class(TRestApi)
+  TRestApi = class(TRestApiBase)
   private
   protected
     function get: string; override;
@@ -54,9 +54,9 @@ begin
   RestServer.CreateMissingTables;
 end;
 
-{ TSqliteRestApi }
+{ TRestApi }
 
-function TSqliteRestApi.get: string;
+function TRestApi.get: string;
 var
   params: TSQLRestURIParams;
 begin
@@ -68,7 +68,7 @@ begin
   Result:= params.OutBody;
 end;
 
-function TSqliteRestApi.post: string;
+function TRestApi.post: string;
 var
   params: TSQLRestURIParams;
 begin
@@ -81,7 +81,7 @@ begin
   Result:= params.OutBody;
 end;
 
-function TSqliteRestApi.delete: string;
+function TRestApi.delete: string;
 var
   params: TSQLRestURIParams;
 begin
@@ -93,7 +93,7 @@ begin
   Result:= params.OutBody;
 end;
 
-function TSqliteRestApi.put: string;
+function TRestApi.put: string;
 var
   params: TSQLRestURIParams;
 begin
@@ -107,7 +107,7 @@ begin
 end;
 
 initialization
-  AddRestApiClass(REST_NAME, TSqliteRestApi);
+  AddRestApiClass(REST_NAME, TRestApi);
   RestServer:= nil;
 finalization
   if Assigned(RestServer) then RestServer.Free;

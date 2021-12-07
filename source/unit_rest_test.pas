@@ -16,9 +16,9 @@ const
 
 type
 
-  { TTestRestApi }
+  { TRestApi }
 
-  TTestRestApi = class(TRestApi)
+  TRestApi = class(TRestApiBase)
   private
   protected
     function get: string; override;
@@ -26,9 +26,9 @@ type
   public
   end;
 
-{ TTestRestApi }
+{ TRestApi }
 
-function TTestRestApi.get: string;
+function TRestApi.get: string;
 
   //
   function direct: string;
@@ -74,7 +74,7 @@ begin
   end;
 end;
 
-function TTestRestApi.post: string;
+function TRestApi.post: string;
 var
   doc: TDocVariantData; // = object
   s: RawUTF8;
@@ -85,6 +85,6 @@ begin
 end;
 
 initialization
-  AddRestApiClass(REST_NAME, TTestRestApi);
+  AddRestApiClass(REST_NAME, TRestApi);
 end.
 
