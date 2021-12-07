@@ -610,7 +610,7 @@ begin
     end;
   end;
 
-  responseLength:= FStream.Size;
+  if Assigned(FStream) then responseLength:= FStream.Size;
 end;
 
 constructor TCustomResourceHandler.Create(const browser: ICefBrowser;
