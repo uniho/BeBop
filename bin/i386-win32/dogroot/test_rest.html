@@ -109,33 +109,6 @@
   }
 
   //
-  const testGetDirectResource = wrapPromise((async() => {
-    try {
-      const res = await fetch(`${__restroot}/test/direct/`)
-      return await res.text()
-    } catch(e) {
-      return e.message + '. Push F5 key.'
-    }
-  })())
-
-  const TestGetDirectInner = props => {
-    const text = testGetDirectResource.read()
-    return html`
-    <div class="red-box" >
-      Direct ⇒ ${text}
-    </div>
-    `
-  }
-
-  const TestGetDirect = props => {
-    return html`
-    <${React.Suspense} fallback=${html`<p>Now Loading...</p>`}>
-      <${TestGetDirectInner} />
-    <//>
-    `
-  }
-
-  //
   const resrSQLitePath = `${__restroot}/test-sqlite`
 
   const updateSQLiteResource = async() => {
@@ -238,7 +211,6 @@
   const elm = html`
     <${TestGet}/>
     <${TestPost}/>
-    <${TestGetDirect}/>
     <${TestSQLite}/>
   `
   

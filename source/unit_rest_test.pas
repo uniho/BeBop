@@ -31,23 +31,6 @@ type
 function TRestApi.get: string;
 
   //
-  function direct: string;
-  var
-    cp: TSQLDBConnectionProperties;
-    rows: ISQLDBRows;
-    rowCount: PtrInt;
-  begin
-    cp:= TSQLDBSQLite3ConnectionProperties.Create(dogroot + '.test.sqlite', '', '', '');
-    try
-      rows:= cp.ExecuteInlined('SELECT * FROM MusicTable', [], True);
-      Result:= rows.FetchAllAsJSON(True, @rowCount);
-      if rowCount = 0 then Result:= '[]';
-    finally
-      cp.Free;
-    end;
-  end;
-
-  //
   function test: string;
   var
     i: integer;
@@ -64,10 +47,7 @@ function TRestApi.get: string;
   end;
 
 begin
-  case PathArray[0] of
-    'direct': Result:= direct;
-    else Result:= test;
-  end;
+  Result:= test;
 end;
 
 function TRestApi.post: string;

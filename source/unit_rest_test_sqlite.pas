@@ -45,13 +45,19 @@ type
 var
   RestServer: TSQLRestServer;
 
-procedure CreateRestServer;
+procedure CreateRestServer(rest: TRestApiBase);
 begin
-  RestServer:= TSQLRestServerDB.CreateWithOwnModel(
-    [TMusicTable],
-    dogroot + '.test.sqlite', false, REST_NAME);
+  rest.Lock;
+  try
+    if Assigned(RestServer) then Exit;
+    RestServer:= TSQLRestServerDB.CreateWithOwnModel(
+      [TMusicTable],
+      dogroot + '.test.sqlite', false, REST_NAME);
 
-  RestServer.CreateMissingTables;
+    RestServer.CreateMissingTables;
+  finally
+    rest.Unlock;
+  end;
 end;
 
 { TRestApi }
@@ -60,7 +66,7 @@ function TRestApi.get: string;
 var
   params: TSQLRestURIParams;
 begin
-  if not Assigned(RestServer) then CreateRestServer;
+  if not Assigned(RestServer) then CreateRestServer(Self);
   params.Url:= REST_NAME + '/' + Path + '?' + Query;
   params.Method:= 'GET';
   params.RestAccessRights:= @SUPERVISOR_ACCESS_RIGHTS;
@@ -72,7 +78,7 @@ function TRestApi.post: string;
 var
   params: TSQLRestURIParams;
 begin
-  if not Assigned(RestServer) then CreateRestServer;
+  if not Assigned(RestServer) then CreateRestServer(Self);
   params.Url:= REST_NAME + '/' + Path;
   params.Method:= 'POST';
   params.InBody:= Body;
@@ -85,7 +91,7 @@ function TRestApi.delete: string;
 var
   params: TSQLRestURIParams;
 begin
-  if not Assigned(RestServer) then CreateRestServer;
+  if not Assigned(RestServer) then CreateRestServer(Self);
   params.Url:= REST_NAME + '/' + Path;
   params.Method:= 'DELETE';
   params.RestAccessRights:= @SUPERVISOR_ACCESS_RIGHTS;
@@ -97,7 +103,7 @@ function TRestApi.put: string;
 var
   params: TSQLRestURIParams;
 begin
-  if not Assigned(RestServer) then CreateRestServer;
+  if not Assigned(RestServer) then CreateRestServer(Self);
   params.Url:= REST_NAME + '/' + Path;
   params.Method:= 'PUT';
   params.InBody:= Body;

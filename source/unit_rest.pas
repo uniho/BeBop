@@ -23,6 +23,7 @@ type
     QueryList: TStringList;
     Path, Query, Body, StatusText: string;
     Request: ICefRequest;
+    FCriticalSection: TRtlCriticalSection;
     function get: string; virtual;
     function post: string; virtual;
     function put: string; virtual;
@@ -31,6 +32,8 @@ type
   public
     constructor Create;
     destructor Destroy; override;
+    procedure Lock;
+    procedure Unlock;
   end;
 
   TRestApiClass = class of TRestApiBase;
@@ -182,13 +185,25 @@ begin
   StatusText:= 'OK';
   QueryList:= TStringList.Create;
   QueryList.Sorted:= True;
+  InitCriticalSection(FCriticalSection);
   inherited Create;
 end;
 
 destructor TRestApiBase.Destroy;
 begin
   QueryList.Free;
+  DoneCriticalSection(FCriticalSection);
   inherited Destroy;
+end;
+
+procedure TRestApiBase.Lock;
+begin
+  System.EnterCriticalSection(FCriticalSection);
+end;
+
+procedure TRestApiBase.Unlock;
+begin
+  System.LeaveCriticalSection(FCriticalSection);
 end;
 
 end.
