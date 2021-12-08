@@ -74,13 +74,13 @@ As it is known, FPC can even link object files of C langauge.
 ## 🌱 Ecosystem
 
 ### ♪ Chromium Embedded Framework (CEF)
-BeBop framework get power from CEF (Chromium Embedded Framework).
+BeBop framework gets power from CEF (Chromium Embedded Framework).
 
 [CEF (Chromium Embedded Framework)](https://bitbucket.org/chromiumembedded/cefhttps://bitbucket.org/chromiumembedded/cef) is a simple framework for embedding Chromium-based browsers in other applications.
 Unlike the [Chromium project](https://www.chromium.org/) itself, which focuses mainly on Google Chrome application development, CEF focuses on facilitating embedded browser use cases in third-party applications.
 
 ### ♪ salvadordf / CEF4Delphi
-BeBop framework get power from CEF through CEF4Delphi.
+BeBop framework gets power from CEF through CEF4Delphi.
 
 [CEF4Delphi](https://github.com/salvadordf/CEF4Delphi) is an open source project to embed Chromium-based browsers in applications made with Delphi or Lazarus/FPC for Windows, Linux and MacOS.
 
