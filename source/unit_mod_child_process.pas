@@ -261,6 +261,7 @@ begin
         pro.Terminate(0);
         Break;
       end;
+      Sleep(100);
     end;
     exitStatus:= pro.ExitStatus;
   end;

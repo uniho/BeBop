@@ -37,11 +37,7 @@ export default props => {
         if (!listJsonText) {
           fileList.push({name: uri, status: ''})
           setStateFileList(fileList)
-          if (stateShowProcess) {
-            await download1(uri, 0, updateFileList, checkAbort)
-          } else {
-            await download2(uri, 0, updateFileList, checkAbort)
-          }
+          await download(uri, 0, updateFileList, checkAbort, !stateShowProcess)
           setStateDownLoading(false)
           return
         }
@@ -62,12 +58,7 @@ export default props => {
 
         for (let i = 0; i < list.length; i++) {
           if (userAbort.current) break;
-          let ok
-          if (stateShowProcess) {
-            ok = await download1('https://www.youtube.com/watch?v=' + fileList[i].name, i, updateFileList, checkAbort)
-          } else {
-            ok = await download2('https://www.youtube.com/watch?v=' + fileList[i].name, i, updateFileList, checkAbort)
-          } 
+          const ok = await download('https://www.youtube.com/watch?v=' + fileList[i].name, i, updateFileList, checkAbort, !stateShowProcess)
           if (!ok) break;
         }
       }
@@ -159,8 +150,8 @@ export default props => {
 }
 
 //
-const download1 = async (uri, index, updateFunc, checkAbortFunc) => {
-
+const download = async (uri, index, updateFunc, checkAbortFunc, windowsHide) => {
+  
   const ffmpeg = await checkFFMPEG()
   if (!ffmpeg) return false;
 
@@ -196,7 +187,7 @@ const download1 = async (uri, index, updateFunc, checkAbortFunc) => {
       await fs.mkdir(path.dirname(saveName), {recursive: true})
       try {
         const options = {
-          windowsHide: false
+          windowsHide,
         }
         if (util.GetSystemDefaultLCID() == 1041/*ja*/) {
           // Just to be sure
@@ -212,98 +203,31 @@ const download1 = async (uri, index, updateFunc, checkAbortFunc) => {
           tempName,
         ], options)
 
-        const status = exec.status
-
-        if (checkAbortFunc()) {
-          updateFunc(index, {status: 'CXL'})
-        } else if (status == 0) {
-          await fs.rename(tempName, saveName)
-          updateFunc(index, {status: 'OK'})
+        let status = 0
+        if (windowsHide) {
+          // Use pipes
+          let size = ''
+          while (await exec.isRunning() && !checkAbortFunc()) {
+            const read = await exec.read()
+            status = read.status
+            if (status != 0) {
+              break;
+            }
+            if (read.stderr.match(/.*HTTP error.*/)) {
+              status = -1
+              break;
+            }
+            const match = read.stderr.match(/size=\s*(.+)\stime=/)
+            if (match && match[1] != size) {
+              size = match[1]
+              updateFunc(index, {size})
+            }
+          }
+          await exec.close()
         } else {
-          updateFunc(index, {status: 'NG'})
+          // Cannot use pipes
+          status = exec.status
         }
-      } finally {
-        await fs.rm(tempName)
-      }
-    } else {
-      updateFunc(index, {status: 'SKIP'})
-    }
-  }
-  return true
-}
-
-//
-const download2 = async (uri, index, updateFunc, checkAbortFunc) => {
-  
-  const ffmpeg = await checkFFMPEG()
-  if (!ffmpeg) return false;
-
-  const res = await fetch(uri)
-
-  // Unlike the NodeJS, require() return a type of Promise.
-  const fs = await require("fs")
-  const path = await require("path")
-  const {execFile} = await require("child_process")
-  const util = await require("util")
-  
-  if (res.ok) {
-    const text = await res.text()
-
-    const [, title] = text.match(/<meta\s*?property="og:title"\s*?content="([^"]+)"\s*?>/)
-    const [, jsonText] = text.match(/"streamingData":\s*?({.+}),\s*"playbackTracking":\s*{/)
-    const json = await JSON.parse(jsonText)  
-    // console.log(json.formats)
-    // console.log(json.adaptiveFormats)
-    updateFunc(index, {name: json.formats[0].url, status: ''})
-    
-    const fileName = unescapeHTML(title).replace(/\:|\?|\.|"|<|>|\||\\|\//g, '_') + ".m4a"
-    updateFunc(index, {name: fileName, status: 'NOW'})
-
-    const saveName = path.join(__execPath, 'downloads', fileName)
-    const tempName = path.join(path.dirname(saveName), '_tmp.' + util.CreateUUID() + '.m4a')
-
-    const fileExits = await fs.stat(saveName)
-      .then(() => true)
-      .catch(() => false)
-
-    if (!fileExits) {
-      await fs.mkdir(path.dirname(saveName), {recursive: true})
-      try {
-        const options = {
-          windowsHide: true // = Use pipes
-        }
-        if (util.GetSystemDefaultLCID() == 1041/*ja*/) {
-          // Just to be sure
-          options.codePage = 932/*SJIS*/
-        }
-      
-        const exec = await execFile(ffmpeg, [
-          '-y', '-hide_banner',
-          '-loglevel', 'info',
-          '-i', json.formats[0].url,
-          '-absf', 'aac_adtstoasc',
-          '-acodec', 'copy',
-          tempName,
-        ], options)
-
-        let status = 0, size = ''
-        while (await exec.isRunning() && !checkAbortFunc()) {
-          const read = await exec.read()
-          status = read.status
-          if (status != 0) {
-            break;
-          }
-          if (read.stderr.match(/.*HTTP error.*/)) {
-            status = -1
-            break;
-          }
-          const match = read.stderr.match(/size=\s*(.+)\stime=/)
-          if (match && match[1] != size) {
-            size = match[1]
-            updateFunc(index, {size})
-          }
-        }
-        await exec.close()
 
         if (checkAbortFunc()) {
           updateFunc(index, {status: 'CXL'})
