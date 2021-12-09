@@ -439,7 +439,7 @@ begin
   taskResult:= TTaskResult.Create;
   try
     RemoveObjectListResult(uuid, taskResult);
-    while Integer(taskResult.result) = 0 do;
+    while PtrInt(taskResult.result) = 0 do;
   finally
     taskResult.Free;
   end;
