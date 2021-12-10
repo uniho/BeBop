@@ -19,8 +19,8 @@ Lazarus with FPC generate very fast small native binaries even though they provi
 ## 🎼 Get started
 ### ♪ Windows 32bit / 64bit
 1. Download the latest version of BeBop framework from [Releases page in this repository](../../releases).
-  * You can take `bebop.exe` from `bebop-v1.x.x+x.x.x-win32.tar.gz` or `bebop-v1.x.x+x.x.x-win64.tar.gz`.
-  * And `bebop.cfg` and some files put in `dogroot` directory from `sample-v1.x.x+x.x.x.tar.gz`.
+   * You can take `bebop.exe` from `bebop-v1.x.x+x.x.x-win32.tar.gz` or `bebop-v1.x.x+x.x.x-win64.tar.gz`.
+   * And `bebop.cfg` and some files put in `dogroot` directory from `sample-v1.x.x+x.x.x.tar.gz`.
 1. Download the CEF binarie files from [CEF Automated Builds](https://cef-builds.spotifycdn.com/index.html). Current supported CEF version is [Windows 32bit 96.0.16](https://cef-builds.spotifycdn.com/cef_binary_96.0.16%2Bg89c902b%2Bchromium-96.0.4664.55_windows32_minimal.tar.bz2) or [Windows 64bit 96.0.16](https://cef-builds.spotifycdn.com/cef_binary_96.0.16%2Bg89c902b%2Bchromium-96.0.4664.55_windows64_minimal.tar.bz2), and "Minimal" type is recommended. 
 1. Out of the CEF binarie files, we just need directories named `Release` and `Resources`. Other directories are unnessesary.
 1. Dive into directory named `Resources`. 
