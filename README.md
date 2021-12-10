@@ -28,9 +28,6 @@ Lazarus with FPC generate very fast small native binaries even though they provi
 1. `Resources` directory is no longer nessesary. `Release` directory left, which is the place you run the application on. Copy `bebop.exe`, `bebop.cfg` and `dogroot` directory to the `Release` directory.
 1. Click the `bebop.exe`, and a new app will be your new best friend.
 
-### ♪ Windows x64 (64bit)
-COMING SOON. Any help is welcome.
-
 ### ♪ Chromebook
 COMING SOON MAYBE. Any help is welcome.
 
