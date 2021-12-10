@@ -17,9 +17,11 @@ Lazarus is a free cross-platform visual integrated development environment (IDE)
 Lazarus with FPC generate very fast small native binaries even though they provide an easy-to-use development, and thus it makes frontend engineers release from the many issues, including the excuse for legitimatery slacking off: "My code's compiling."
 
 ## 🎼 Get started
-### ♪ Windows x86 (32bit)
-1. Download the latest version of BeBop framework from [Releases page in this repository](../../releases). You can take `bebop.exe`, `bebop.cfg`, and some files put in `dogroot` directory.
-1. Download the CEF binarie files from [CEF Automated Builds](https://cef-builds.spotifycdn.com/index.html). Current supported CEF version is [Windows 32-bit 96.0.16](https://cef-builds.spotifycdn.com/cef_binary_96.0.16%2Bg89c902b%2Bchromium-96.0.4664.55_windows32_minimal.tar.bz2), and "Minimal" type is recommended. 
+### ♪ Windows 32bit / 64bit
+1. Download the latest version of BeBop framework from [Releases page in this repository](../../releases).
+  * You can take `bebop.exe` from `bebop-v1.x.x+x.x.x-win32.tar.gz` or `bebop-v1.x.x+x.x.x-win64.tar.gz`.
+  * And `bebop.cfg` and some files put in `dogroot` directory from `sample-v1.x.x+x.x.x.tar.gz`.
+1. Download the CEF binarie files from [CEF Automated Builds](https://cef-builds.spotifycdn.com/index.html). Current supported CEF version is [Windows 32bit 96.0.16](https://cef-builds.spotifycdn.com/cef_binary_96.0.16%2Bg89c902b%2Bchromium-96.0.4664.55_windows32_minimal.tar.bz2) or [Windows 64bit 96.0.16](https://cef-builds.spotifycdn.com/cef_binary_96.0.16%2Bg89c902b%2Bchromium-96.0.4664.55_windows64_minimal.tar.bz2), and "Minimal" type is recommended. 
 1. Out of the CEF binarie files, we just need directories named `Release` and `Resources`. Other directories are unnessesary.
 1. Dive into directory named `Resources`. 
 1. You will see 1 dir (named `locales`) and 4 files (`chrome_100_percent.pak`, `chrome_200_percent.pak`, `icudtl.dat`, and `resources.pak`). Copy these 5 items (1 dir + 4 files) into `Release` directory.
@@ -39,7 +41,7 @@ COMING SOON MAYBE. Any help is welcome.
 COMING SOON MAYBE. Any help is welcome.
 
 ## 👶 First steps
-See samples `.html` and `.js` source codes put in `/bin/i386-win32/dogroot` directory.
+See samples `.html` and `.js` source codes put in `dogroot` directory.
 `index.html` is the beginning of everything.
 
 If you have built websites with JavaScript / HTML / CSS, and desktop applications with C++ / C# / Delphi / VB / etc., you should be able to create new desktop applications soon.
