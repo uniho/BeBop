@@ -661,7 +661,7 @@ procedure TRmThread.ExecuteAct;
         Result:= RemoveDir(fileName);
         exit;
       end;
-      if FindFirst(IncludeTrailingPathDelimiter(fileName) + '*.*', faAnyFile, searchRec) = 0 then begin
+      if FindFirst(IncludeTrailingPathDelimiter(fileName) + '*', faAnyFile, searchRec) = 0 then begin
         try
           repeat
             if not ((searchRec.Name = '..') or (searchRec.Name = '.')) then begin
@@ -762,7 +762,7 @@ begin
   if FindFirst(fileName, faAnyFile, searchRec) = 0 then begin
     FindClose(searchRec);
   end else begin
-    fileName:= IncludeTrailingPathDelimiter(fileName) + '*.*';
+    fileName:= IncludeTrailingPathDelimiter(fileName) + '*';
     if FindFirst(fileName, faDirectory, searchRec) = 0 then begin
       repeat
         if searchRec.Name = '.' then break;
@@ -796,7 +796,7 @@ begin
   fileName:= UTF8Encode(Args.GetString(0));
   if fileName = '' then fileName:= '.';
   fileName:= CreateAbsolutePath(fileName, dogRoot);
-  fileName:= IncludeTrailingPathDelimiter(fileName) + '*.*';
+  fileName:= IncludeTrailingPathDelimiter(fileName) + '*';
   if FindFirst(fileName, faAnyFile, searchRec) = 0 then begin
     repeat
       if not ((searchRec.Name = '..') or (searchRec.Name = '.')) then begin
