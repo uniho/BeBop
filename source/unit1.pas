@@ -153,13 +153,19 @@ begin
       i:= sl.IndexOfName('restroot');
       if i >= 0 then sl.GetNameValue(i, s1, restroot);
 
+      s:= '';
+      {$IFDEF Windows}
       s:= GetDefaultCEFUserAgent;
+      {$ENDIF}
       i:= sl.IndexOfName('UserAgent');
       if i >= 0 then sl.GetNameValue(i, s1, s);
       GlobalCEFApp.UserAgent:= UTF8Decode(s);
     except
       dogroot:= IncludeTrailingPathDelimiter(CreateAbsolutePath(dogrootDefault, execPath));
+      s:= '';
+      {$IFDEF Windows}
       s:= GetDefaultCEFUserAgent;
+      {$ENDIF}
       GlobalCEFApp.UserAgent:= UTF8Decode(s);
     end;
   finally
