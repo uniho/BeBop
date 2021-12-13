@@ -250,16 +250,16 @@ const download = async (uri, index, updateFunc, checkAbortFunc, windowsHide) => 
 //
 const checkFFMPEG = async() => {
 
-  const path = await require("path")
   const process = await require("process")
-  const fs = await require("fs")
 
-  let binName = 'ffmpeg' 
-  if (process.platform == 'win32') {
-    binName = 'ffmpeg.exe' 
+  if (process.platform != 'win32') {
+    return 'ffmpeg' 
   }
 
-  const ffmpeg = path.join(__execPath, binName)
+  const path = await require("path")
+  const fs = await require("fs")
+
+  const ffmpeg = path.join(__execPath, 'ffmpeg.exe')
 
   const fileExists = await fs.stat(ffmpeg)
     .then(() => true)
@@ -270,11 +270,7 @@ const checkFFMPEG = async() => {
   }
     
   const {app} = await require("bebop")
-  if (process.platform == 'win32') {
-    app.showMessage(`You have to put ${path.basename(ffmpeg)} in "${path.dirname(ffmpeg)}" folder.`)
-  } else {
-    app.showMessage(`You have to get ffmpeg.`)
-  }  
+  app.showMessage(`You have to put ${path.basename(ffmpeg)} in "${path.dirname(ffmpeg)}" folder.`)
   return false
 }
 
