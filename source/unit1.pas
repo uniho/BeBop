@@ -50,6 +50,7 @@ type
     procedure ChromiumLoadErrorEvent(Data: PtrInt);
     procedure ChromiumKeyDownEvent(Data: PtrInt);
     procedure ChromiumConsoleMessage(Sender: TObject; const browser: ICefBrowser; level: TCefLogSeverity; const message, source: ustring; line: Integer; out Result: Boolean);
+    procedure ChromiumConsoleMessageEvent(Data: PtrInt);
     procedure ChromiumBeforeContextMenu(Sender: TObject; const browser: ICefBrowser; const frame: ICefFrame; const params: ICefContextMenuParams; const model: ICefMenuModel);
   public
     Chromium: TChromium;
@@ -489,20 +490,32 @@ begin
   Result:= True;
 end;
 
+type
+  TQueueAsyncCallDataString = class
+    str: string;
+  end;
+
 procedure TForm1.ChromiumConsoleMessage(Sender: TObject; const browser: ICefBrowser;
   level: TCefLogSeverity; const message, source: ustring; line: Integer; out
   Result: Boolean);
 var
-  s: string;
+  data: TQueueAsyncCallDataString;
 begin
   if level = LOGSEVERITY_ERROR then begin
-    s:= Format('%s'#$0d'file: %s'#$0d'line: %d',
+    data:= TQueueAsyncCallDataString.Create;
+    data.str:= Format('%s'#$0d'file: %s'#$0d'line: %d',
       [message, normalizeResourceName(UTF8Encode(source)), line]);
-    InformationText.Caption:= s;
-    InformationPanel.BringToFront;
-    InformationPanel.Show;
-    Self.Show;
+    Application.QueueAsyncCall(@ChromiumConsoleMessageEvent, PtrInt(data));
   end;
+end;
+
+procedure TForm1.ChromiumConsoleMessageEvent(Data: PtrInt);
+begin
+  InformationText.Caption:= TQueueAsyncCallDataString(Data).str;
+  TQueueAsyncCallDataString(Data).Free;
+  InformationPanel.BringToFront;
+  InformationPanel.Show;
+  if not Self.Visible then Self.Show;
 end;
 
 procedure TForm1.ChromiumBeforeContextMenu(Sender: TObject;
