@@ -18,7 +18,7 @@ type
     ResolveOnTerminate: boolean;
     procedure Execute; override;
     procedure ExecuteAct; virtual; abstract;
-    procedure DoTerminate; override;
+    procedure TerminateEvent(Sender: TObject);
   public
     UID: string;
     Frame: ICefFrame;
@@ -116,6 +116,7 @@ constructor TPromiseThread.Create();
 begin
   FreeOnTerminate:= False;
   ResolveOnTerminate:= True;
+  OnTerminate:= @TerminateEvent;
   inherited Create(True); // CreateSuspended=True
 end;
 
@@ -136,7 +137,7 @@ begin
   end;
 end;
 
-procedure TPromiseThread.DoTerminate;
+procedure TPromiseThread.TerminateEvent(Sender: TObject);
 var
   msg: ICefProcessMessage;
 begin
