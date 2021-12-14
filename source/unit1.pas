@@ -238,7 +238,7 @@ end;
 
 procedure TForm1.FormShowEvent(Data: PtrInt);
 begin
-  //
+  CEFWindowParent.Chromium:= Self.Chromium;
 end;
 
 procedure TForm1.FormClose(Sender: TObject; var CloseAction: TCloseAction);
@@ -516,12 +516,21 @@ begin
 end;
 
 procedure TForm1.ChromiumConsoleMessageEvent(Data: PtrInt);
+var
+  s: string;
 begin
-  InformationText.Caption:= TQueueAsyncCallDataString(Data).str;
+  s:= TQueueAsyncCallDataString(Data).str;
   TQueueAsyncCallDataString(Data).Free;
+  InformationText.Caption:= s;
   InformationPanel.BringToFront;
   InformationPanel.Show;
   if not Self.Visible then Self.Show;
+
+  {$IF Defined(LCLGTK2)}
+  // GTK2 doesn't show InformationPanel. Why?
+  Application.MessageBox(PChar(s), 'Error');
+  //Chromium.ShowDevTools(Point(0, 0));
+  {$ENDIF}
 end;
 
 procedure TForm1.ChromiumBeforeContextMenu(Sender: TObject;
