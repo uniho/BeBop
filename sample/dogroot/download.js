@@ -10,6 +10,8 @@ const targetURI =
 const autoStart = __argv.indexOf('-autostart') >= 0
 let autoClose = autoStart
 
+const process = requireSync("process")
+
 //
 export default props => {
 
@@ -115,12 +117,16 @@ export default props => {
           (stateDownloading ? 'Stop Download' : 'Start Download')}
       </button>
       
-      <label>
-        <input type="checkbox" disabled=${stateDownloading} onChange=${e => {
-          setStateShowProcess(state => !state)
-        }} />
-        Show Process
-      </label>
+      ${
+        process.platform !== 'win32' ? html`
+        <label>
+          <input type="checkbox" disabled=${stateDownloading} onChange=${e => {
+            setStateShowProcess(state => !state)
+          }} />
+          Show Process
+        </label>
+        ` : null
+      }
     </div>
 
     ${function _() {
@@ -249,8 +255,6 @@ const download = async (uri, index, updateFunc, checkAbortFunc, windowsHide) => 
 
 //
 const checkFFMPEG = async() => {
-
-  const process = await require("process")
 
   if (process.platform != 'win32') {
     return 'ffmpeg' 
