@@ -8,7 +8,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls, LMessages, StdCtrls,
-  uCEFChromium, uCEFWindowParent, uCEFTypes, uCEFInterfaces;
+  uCEFChromium, uCEFLinkedWindowParent, uCEFTypes, uCEFInterfaces;
 
 type
 
@@ -22,7 +22,7 @@ type
     procedure FormKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure FormShow(Sender: TObject);
   private
-    CEFWindowParent: TCEFWindowParent;
+    CEFWindowParent: TCEFLinkedWindowParent;
     InformationPanel: TPanel;
     InformationText: TStaticText;
     FCanClose: boolean;
@@ -179,7 +179,7 @@ begin
     sl.Free;
   end;
 
-  CEFWindowParent:= TCEFWindowParent.Create(Self);
+  CEFWindowParent:= TCEFLinkedWindowParent.Create(Self);
   CEFWindowParent.Parent:= Self;
   CEFWindowParent.Align:= alClient;
 
