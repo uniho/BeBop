@@ -227,7 +227,6 @@ begin
 
   s:= UTF8Encode(Args.GetString(0));
   if s = '' then exit;
-  s:= CreateAbsolutePath(s, execPath);
   if codePage > 0 then begin
     SetCodePage(RawByteString(s), codePage, true);
   end;
