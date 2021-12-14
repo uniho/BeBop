@@ -9,7 +9,7 @@ uses
   {$IFDEF HASAMIGA}
   athreads,
   {$ENDIF}
-  {$IFDEF Windows}
+  {$IFDEF Win32}
   Windows,
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
@@ -19,7 +19,7 @@ uses
 
 {.$R *.res}
 
-{$IFDEF Windows}
+{$IFDEF Win32}
   // CEF3 needs to set the LARGEADDRESSAWARE flag which allows 32-bit processes to use up to 3GB of RAM.
   {$SetPEFlags IMAGE_FILE_LARGE_ADDRESS_AWARE}
 {$ENDIF}
@@ -30,7 +30,7 @@ begin
     InitGlobalCEFApp;
     if GlobalCEFApp.StartMainProcess then begin
       RequireDerivedFormResource:=True;
-  Application.Scaled:=True;
+      Application.Scaled:=True;
       Application.ShowMainForm:= False;
       Application.Initialize;
       Application.CreateForm(TForm1, Form1);
