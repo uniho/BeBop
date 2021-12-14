@@ -713,7 +713,7 @@ end;
 
 procedure TThreadWakeupCef.Check1;
 begin
-  wakeup:= Form1.Chromium.CreateBrowser(Form1.CEFWindowParent, '');
+  wakeup:= Form1.Chromium.CreateBrowser(Form1.CEFWindowParent.Handle, Form1.CEFWindowParent.BoundsRect);
 end;
 
 procedure TThreadWakeupCef.Check2;
