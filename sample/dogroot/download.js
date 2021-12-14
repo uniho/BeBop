@@ -118,7 +118,7 @@ export default props => {
       </button>
       
       ${
-        process.platform !== 'win32' ? html`
+        process.platform == 'win32' ? html`
         <label>
           <input type="checkbox" disabled=${stateDownloading} onChange=${e => {
             setStateShowProcess(state => !state)
