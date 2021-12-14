@@ -25,10 +25,7 @@
   // https://github.com/developit/htm
   const html = htm.bind(React.createElement)
 
-  // Unlike the NodeJS, require() return a type of Promise.
-  // If you want a synchronous processing, you can choose requireSync().
-  // But don't forget synchronous methods will often block UIs.
-  const process = requireSync('process')
+  const process = await require('process')
 
   //
   const TestEnv = props => {

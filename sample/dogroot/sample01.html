@@ -67,9 +67,9 @@
   }
 
   // Unlike the NodeJS, require() return a type of Promise.
-  // If you want a synchronous processing, you can choose requireSync().
+  // If you want a synchronous processing, you can use Top-level await (https://github.com/tc39/proposal-top-level-await).
   // But don't forget synchronous methods will often block UI.
-  const bebop = requireSync('bebop')
+  const bebop = await require('bebop')
 
   const Tools = props => {
 

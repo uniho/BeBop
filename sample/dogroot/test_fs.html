@@ -53,11 +53,8 @@
     };
   }
 
-  // Unlike the NodeJS, require() return a type of Promise.
-  // If you want a synchronous processing, you can choose requireSync().
-  // But don't forget synchronous methods will often block UIs.
-  const fs = requireSync('fs')
-  const util = requireSync('util')
+  const fs = await require('fs')
+  const util = await require('util')
 
   //
   const testReadWriteFileResource = wrapPromise((async() => {

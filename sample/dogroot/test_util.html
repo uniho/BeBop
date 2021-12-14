@@ -53,10 +53,7 @@
     };
   }
 
-  // Unlike the NodeJS, require() return a type of Promise.
-  // If you want a synchronous processing, you can choose requireSync().
-  // But don't forget synchronous methods will often block UIs.
-  const util = requireSync('util')
+  const util = await require('util')
 
   const testHtml = "&lt;TEST&gt;"
 

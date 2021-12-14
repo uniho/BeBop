@@ -10,7 +10,7 @@ const targetURI =
 const autoStart = __argv.indexOf('-autostart') >= 0
 let autoClose = autoStart
 
-const process = requireSync("process")
+const process = await require("process")
 
 //
 export default props => {

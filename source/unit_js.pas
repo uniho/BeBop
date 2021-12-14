@@ -497,10 +497,42 @@ end;
 function TV8HandlerGlobal.Execute(const name: ustring; const obj: ICefv8Value;
   const arguments: TCefv8ValueArray; var retval: ICefv8Value;
   var exception: ustring): Boolean;
+
+  //
+  function requireSync: boolean;
+  var
+    v1, v2, g: ICefv8Value;
+    us: ustring;
+    i: integer;
+    handlers: TModuleHandlers;
+  begin
+    Result:= True;
+
+    // Show warning
+    g:= TCefv8ContextRef.Current.GetGlobal;
+    v1:= g.GetValueByKey('console');
+    v2:= v1.GetValueByKey('warn');
+    v2.ExecuteFunction(v1, [TCefv8ValueRef.NewString('requireSync() has been deprecated. Please use require() with top-level await instead.')]);
+
+    if Length(arguments) > 0 then begin
+      us:= arguments[0].GetStringValue;
+      i:= ModuleHandlerList.IndexOf(UTF8Encode(us));
+      if i < 0 then begin
+        exception:= 'You forgot to add "' + us + '" module handler to ModuleHandlerList.';
+        exit;
+      end;
+      handlers:= TModuleHandlers(ModuleHandlerList.Objects[i]);
+      if not Assigned(handlers.requireCreate) then begin
+        exception:= '"' + us + '" module dose NOT support requireSync(). Use require().';
+        exit;
+      end;
+      Result:= handlers.requireCreate(us, obj, arguments, retval, exception);
+    end;
+  end;
+
 var
   us: ustring;
   i: integer;
-  handlers: TModuleHandlers;
 begin
   Result:= False;
   case name of
@@ -518,24 +550,8 @@ begin
       end;
     end;
 
-    'requireSync': begin
-      if Length(arguments) > 0 then begin
-        us:= arguments[0].GetStringValue;
-        i:= ModuleHandlerList.IndexOf(UTF8Encode(us));
-        if i < 0 then begin
-          exception:= 'You forgot to add "' + us + '" module handler to ModuleHandlerList.';
-          Result:= True;
-          exit;
-        end;
-        handlers:= TModuleHandlers(ModuleHandlerList.Objects[i]);
-        if not Assigned(handlers.requireCreate) then begin
-          exception:= '"' + us + '" module dose NOT support requireSync(). Use require().';
-          Result:= True;
-          exit;
-        end;
-        Result:= handlers.requireCreate(us, obj, arguments, retval, exception);
-      end;
-    end;
+    'requireSync':
+      Result:= requireSync;
   end;
   Result:= True;
 end;
