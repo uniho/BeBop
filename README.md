@@ -24,8 +24,8 @@ Lazarus with FPC generate very fast small native binaries even though they provi
    * You can take `bebop.exe` from `bebop-v1.x.x+x.x.x-win32.tar.gz` or `bebop-v1.x.x+x.x.x-win64.tar.gz`.
    * And `bebop.cfg` and some files put in `dogroot` directory from `sample-v1.x.x+x.x.x.tar.gz`.
 1. Download the CEF binarie files from [CEF Automated Builds](https://cef-builds.spotifycdn.com/index.html).
-   * [For Windows 32bit](https://cef-builds.spotifycdn.com/index.html#windows32)
-   * [For Windows 64bit](https://cef-builds.spotifycdn.com/index.html#windows64)
+   * [For Windows 32bit](https://cef-builds.spotifycdn.com/index.html#windows32:96.0.18)
+   * [For Windows 64bit](https://cef-builds.spotifycdn.com/index.html#windows64:96.0.18)
 
    Current supported CEF version is `96.0.18`, and "Minimal" type is recommended.
   
@@ -41,7 +41,7 @@ Lazarus with FPC generate very fast small native binaries even though they provi
 1. Download the latest version of BeBop framework from [Releases page in this repository](../../releases).
    * You can take `bebop` from `bebop-v1.x.x+x.x.x-linux64.tar.gz`.
    * And `bebop.cfg` and some files put in `dogroot` directory from `sample-v1.x.x+x.x.x.tar.gz`.
-1. Download the CEF binarie files from [CEF Automated Builds (Linux 64-bit)](https://cef-builds.spotifycdn.com/index.html#linux64).
+1. Download the CEF binarie files from [CEF Automated Builds (Linux 64-bit)](https://cef-builds.spotifycdn.com/index.html#linux64:96.0.18).
 
    Current supported CEF version is `96.0.18`, and "Minimal" type is recommended.
   
