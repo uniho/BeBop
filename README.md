@@ -29,7 +29,7 @@ Lazarus with FPC generate very fast small native binaries even though they provi
 
    Current supported CEF version is `96.0.18`, and "Minimal" type is recommended.
   
-   If you cannot not find it, click `Show All Builds` or `Show more builds` link at the bottom.
+   If you cannot find it, click `Show All Builds` or `Show more builds` link at the bottom.
 1. Out of the CEF binarie files, we just need directories named `Release` and `Resources`. Other directories are unnessesary.
 1. Dive into directory named `Resources`. 
 1. You will see 1 dir (named `locales`) and 4 files (`chrome_100_percent.pak`, `chrome_200_percent.pak`, `icudtl.dat`, and `resources.pak`). Copy these 5 items (1 dir + 4 files) into `Release` directory.
@@ -45,7 +45,7 @@ Lazarus with FPC generate very fast small native binaries even though they provi
 
    Current supported CEF version is `96.0.18`, and "Minimal" type is recommended.
   
-   If you cannot not find it, click `Show All Builds` or `Show more builds` link at the bottom.
+   If you cannot find it, click `Show All Builds` or `Show more builds` link at the bottom.
 1. Out of the CEF binarie files, we just need directories named `Release` and `Resources`. Other directories are unnessesary.
 1. Dive into directory named `Resources`. 
 1. You will see 1 dir (named `locales`) and 4 files (`chrome_100_percent.pak`, `chrome_200_percent.pak`, `icudtl.dat`, and `resources.pak`). Copy these 5 items (1 dir + 4 files) into `Release` directory.
