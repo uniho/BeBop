@@ -1,2 +1,4 @@
 /source/*.lps
 /bin
+/source/lib
+/source/backup
