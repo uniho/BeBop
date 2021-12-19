@@ -17,24 +17,46 @@ Lazarus is a free cross-platform visual integrated development environment (IDE)
 Lazarus with FPC generate very fast small native binaries even though they provide an easy-to-use development, and thus it makes frontend engineers release from the many issues, including the excuse for legitimatery slacking off: "My code's compiling."
 
 ## 🎼 Get started
+
 ### ♪ Windows 32bit / 64bit
+
 1. Download the latest version of BeBop framework from [Releases page in this repository](../../releases).
    * You can take `bebop.exe` from `bebop-v1.x.x+x.x.x-win32.tar.gz` or `bebop-v1.x.x+x.x.x-win64.tar.gz`.
    * And `bebop.cfg` and some files put in `dogroot` directory from `sample-v1.x.x+x.x.x.tar.gz`.
-1. Download the CEF binarie files from [CEF Automated Builds](https://cef-builds.spotifycdn.com/index.html). Current supported CEF version is [Windows 32bit 96.0.16](https://cef-builds.spotifycdn.com/cef_binary_96.0.16%2Bg89c902b%2Bchromium-96.0.4664.55_windows32_minimal.tar.bz2) or [Windows 64bit 96.0.16](https://cef-builds.spotifycdn.com/cef_binary_96.0.16%2Bg89c902b%2Bchromium-96.0.4664.55_windows64_minimal.tar.bz2), and "Minimal" type is recommended. 
+1. Download the CEF binarie files from [CEF Automated Builds](https://cef-builds.spotifycdn.com/index.html).
+   * [For Windows 32bit](https://cef-builds.spotifycdn.com/index.html#windows32)
+   * [For Windows 64bit](https://cef-builds.spotifycdn.com/index.html#windows64)
+
+   Current supported CEF version is `96.0.18`, and "Minimal" type is recommended.
+  
+   If you cannot not find it, click `Show All Builds` or `Show more builds` link at the bottom.
 1. Out of the CEF binarie files, we just need directories named `Release` and `Resources`. Other directories are unnessesary.
 1. Dive into directory named `Resources`. 
 1. You will see 1 dir (named `locales`) and 4 files (`chrome_100_percent.pak`, `chrome_200_percent.pak`, `icudtl.dat`, and `resources.pak`). Copy these 5 items (1 dir + 4 files) into `Release` directory.
 1. `Resources` directory is no longer nessesary. `Release` directory left, which is the place you run the application on. Copy `bebop.exe`, `bebop.cfg` and `dogroot` directory to the `Release` directory.
 1. Click the `bebop.exe`, and a new app will be your new best friend.
 
+### ♪ Linux 64bit
+
+1. Download the latest version of BeBop framework from [Releases page in this repository](../../releases).
+   * You can take `bebop` from `bebop-v1.x.x+x.x.x-linux64.tar.gz`.
+   * And `bebop.cfg` and some files put in `dogroot` directory from `sample-v1.x.x+x.x.x.tar.gz`.
+1. Download the CEF binarie files from [CEF Automated Builds (Linux 64-bit)](https://cef-builds.spotifycdn.com/index.html#linux64).
+
+   Current supported CEF version is `96.0.18`, and "Minimal" type is recommended.
+  
+   If you cannot not find it, click `Show All Builds` or `Show more builds` link at the bottom.
+1. Out of the CEF binarie files, we just need directories named `Release` and `Resources`. Other directories are unnessesary.
+1. Dive into directory named `Resources`. 
+1. You will see 1 dir (named `locales`) and 4 files (`chrome_100_percent.pak`, `chrome_200_percent.pak`, `icudtl.dat`, and `resources.pak`). Copy these 5 items (1 dir + 4 files) into `Release` directory.
+1. `Resources` directory is no longer nessesary. `Release` directory left, which is the place you run the application on. Copy `bebop`, `bebop.cfg` and `dogroot` directory to the `Release` directory.
+1. Click the `bebop`, and a new app will be your new best friend.
+
+
 ### ♪ Chromebook
 COMING SOON MAYBE. Any help is welcome.
 
 ### ♪ Mac
-COMING SOON MAYBE. Any help is welcome.
-
-### ♪ Linux
 COMING SOON MAYBE. Any help is welcome.
 
 ## 👶 First steps
