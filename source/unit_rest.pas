@@ -113,6 +113,7 @@ begin
     {$ENDIF}
 
     rest.Request:= request;
+    rest.Body:= '';
     if Assigned(request.PostData) then begin
       len:= request.PostData.GetElementCount;
       if len > 0 then begin
@@ -120,8 +121,11 @@ begin
         request.PostData.GetElements(len, bodys);
         // 'Content-Type': 'application/json'
         if bodys[0].GetType = PDE_TYPE_BYTES then begin
-          SetLength(rest.Body, bodys[0].GetBytesCount);
-          bodys[0].GetBytes(bodys[0].GetBytesCount, @rest.Body[1]);
+          for i:= 0 to len-1 do begin
+            SetLength(s, bodys[i].GetBytesCount);
+            bodys[i].GetBytes(bodys[i].GetBytesCount, @s[1]);
+            rest.Body:= rest.Body + s;
+          end;
         end;
       end;
     end;
