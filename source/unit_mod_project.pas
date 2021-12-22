@@ -564,6 +564,7 @@ procedure TBrowserLoadURLThread.doUnSafe;
 var
   s: String;
 begin
+  NewFunction('console.warn("browser.loadURL() has been deprecated. Please use location.href = newURL instead.");');
   if Args.GetSize > 0 then begin
     s:= UTF8Encode(Args.GetString(0));
     Form1.Chromium.LoadURL(UTF8Decode('http://0.0.0.0/' + s));

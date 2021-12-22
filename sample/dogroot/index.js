@@ -1,8 +1,7 @@
 
 export const main = async props => {
 
-  const {app, screen, mainform, browser} = await require('bebop')
-  const util = await require('util')
+  const {screen, mainform, browser} = await require('bebop')
 
   const w = 800
   const h = 600
@@ -13,21 +12,21 @@ export const main = async props => {
   mainform.caption = 'DEMO デモですよ'
 
   if (__argv.indexOf('-autostart') >= 0) {
-    browser.loadURL('download.html')
+    location.href = 'download.html'
   } else if (__argv.indexOf('-testlua') >= 0) {
-    browser.loadURL('testlua.html')
+    location.href = 'testlua.html'
   } else if (__argv.indexOf('-test_path') >= 0) {
-    browser.loadURL('test_path.html')
+    location.href = 'test_path.html'
   } else if (__argv.indexOf('-test_process') >= 0) {
-    browser.loadURL('test_process.html')
+    location.href = 'test_process.html'
   } else if (__argv.indexOf('-test_fs') >= 0) {
-    browser.loadURL('test_fs.html')
+    location.href = 'test_fs.html'
   } else if (__argv.indexOf('-test_util') >= 0) {
-    browser.loadURL('test_util.html')
+    location.href = 'test_util.html'
   } else if (__argv.indexOf('-test_rest') >= 0) {
-    browser.loadURL('test_rest.html')
+    location.href = 'test_rest.html'
   } else {
-    browser.loadURL('sample01.html')
+    location.href = 'sample01.html'
   }
   
   // browser.showDevTools()
