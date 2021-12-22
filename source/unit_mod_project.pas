@@ -582,7 +582,8 @@ end;
 
 procedure TBrowserGoBackThread.doUnSafe;
 begin
-  Form1.Chromium.GoBack;
+  NewFunction('console.warn("browser.goBack() has been deprecated. Please use history.back() instead.");');
+  //Form1.Chromium.GoBack;
   CefResolve:= TCefValueRef.New;
   CefResolve.SetBool(true);
 end;
@@ -596,7 +597,8 @@ end;
 
 procedure TBrowserGoForwardThread.doUnSafe;
 begin
-  Form1.Chromium.GoForward;
+  NewFunction('console.warn("browser.goForward() has been deprecated. Please use history.forward() instead.");');
+  //Form1.Chromium.GoForward;
   CefResolve:= TCefValueRef.New;
   CefResolve.SetBool(true);
 end;

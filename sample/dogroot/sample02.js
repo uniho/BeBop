@@ -2,8 +2,6 @@
 //
 export const main = async props => {
 
-  const bebop = await require("bebop")
-
   //
   const Page = props => {
 
@@ -84,8 +82,8 @@ export const main = async props => {
 
         <p class="m-4">
           ＜
-          <a href="javascript:void(0)" onClick=${async e=>{
-            bebop.browser.goBack()
+          <a href="javascript:void(0)" onClick=${e => {
+            window.history.back()
           }}>Back</a>
         </p>
         

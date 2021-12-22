@@ -53,9 +53,8 @@
 
   const elm = html`
   <h1>Nice Downloader(Audio only)</h1>
-  <p>＜ <a href="javascript:void(0)" onClick=${async e=>{
-    const bebop = await require("bebop")
-    bebop.browser.goBack()
+  <p>＜ <a href="javascript:void(0)" onClick=${e => {
+    window.history.back()
   }}>Back</a></p>
   <${Download}/>
   `
