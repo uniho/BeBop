@@ -13,23 +13,6 @@ Show the application's message box.
 
 Terminate the application.
 
-### `bebop.browser.loadURL(html)`
-* `html` \<string> The name of a new html file.
-* Returns: \<Promise>
-
-Load new html file.
-
-### `bebop.browser.reload()`
-* Returns: \<Promise>
-
-Reload current html file.
-
-### `bebop.browser.goBack()`
-* Returns: \<Promise>
-
-### `bebop.browser.goForward()`
-* Returns: \<Promise>
-
 ### `bebop.browser.showDevTools()`
 * Returns: \<Promise>
 
