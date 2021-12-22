@@ -13,6 +13,11 @@ Show the application's message box.
 
 Terminate the application.
 
+### `bebop.browser.reload()`
+* Returns: \<Promise>
+
+Reload current html file.
+
 ### `bebop.browser.showDevTools()`
 * Returns: \<Promise>
 
