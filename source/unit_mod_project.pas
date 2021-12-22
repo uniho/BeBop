@@ -547,7 +547,8 @@ end;
 
 procedure TBrowserReloadThread.doUnSafe;
 begin
-  Form1.Chromium.ReloadIgnoreCache;
+  NewFunction('console.warn("browser.reload() has been deprecated. Please use location.reload() instead.");');
+  //Form1.Chromium.ReloadIgnoreCache;
   CefResolve:= TCefValueRef.New;
   CefResolve.SetBool(true);
 end;

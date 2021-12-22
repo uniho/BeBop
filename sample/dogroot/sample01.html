@@ -77,7 +77,7 @@
 
     return html`
     <p class=${style2}>
-      <button onClick=${() => browser.reload()}>
+      <button onClick=${() => location.reload(true)}>
         Reload Page (F5)
       </button>
       <button onClick=${() => browser.showDevTools()}>
