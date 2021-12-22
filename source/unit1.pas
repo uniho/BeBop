@@ -78,6 +78,10 @@ uses
 
 type
 
+  TQueueAsyncCallDataString = class
+    str: string;
+  end;
+
   { TThreadWakeupCef }
 
   TThreadWakeupCef = class(TThread)
@@ -326,14 +330,19 @@ end;
 procedure TForm1.ChromiumLoadErrorEvent(Data: PtrInt);
 var
   s: string;
+  ds: TQueueAsyncCallDataString;
 begin
   Chromium.GoBack;
 
-  s:= UTF8Encode(IntToStr(TChromiumLoadErrorData(data).errorCode) + #$0d +
-   TChromiumLoadErrorData(data).errorText + #$0d#$0d +
-   TChromiumLoadErrorData(data).failedUrl);
+  s:= 'Load Error ' +
+   UTF8Encode(IntToStr(TChromiumLoadErrorData(data).errorCode) + ': ' +
+   TChromiumLoadErrorData(data).errorText + #$0d +
+   normalizeResourceName(TChromiumLoadErrorData(data).failedUrl));
   TChromiumLoadErrorData(data).Free;
-  Application.MessageBox(PChar(s), nil);
+
+  ds:= TQueueAsyncCallDataString.Create;
+  ds.str:= s;
+  Application.QueueAsyncCall(@ChromiumConsoleMessageEvent, PtrInt(ds));
 end;
 
 procedure TForm1.FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -495,11 +504,6 @@ begin
   end;
   Result:= True;
 end;
-
-type
-  TQueueAsyncCallDataString = class
-    str: string;
-  end;
 
 procedure TForm1.ChromiumConsoleMessage(Sender: TObject; const browser: ICefBrowser;
   level: TCefLogSeverity; const message, source: ustring; line: Integer; out
