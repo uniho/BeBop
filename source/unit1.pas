@@ -70,7 +70,7 @@ procedure InitGlobalCEFApp;
 implementation
 uses
   LCLIntf, variants, LCLType, LazFileUtils,
-  uCEFConstants, uCEFApplication, uCEFResourceHandler,
+  uCEFConstants, uCEFApplication, uCEFResourceHandler, uCEFWorkScheduler,
   uCEFMiscFunctions,
   unit_js, unit_global, unit_thread, unit_rest;
 
@@ -114,9 +114,18 @@ var
   ThreadShutdownCef: TThreadShutdownCef;
 
 
+procedure GlobalCEFApp_OnScheduleMessagePumpWork(const aDelayMS : int64);
+begin
+  GlobalCEFWorkScheduler.ScheduleMessagePumpWork(aDelayMS);
+end;
+
 procedure InitGlobalCEFApp;
 begin
   execPath:= ExtractFilePath(ParamStr(0));
+  {$IFDEF DARWIN}  // $IFDEF MACOSX
+  execPath:= CreateAbsolutePath(execPath+'../../', execPath);
+  {$ENDIF}
+
   //GlobalCEFApp.FrameworkDirPath:= UTF8Decode(execPath + 'Release');
   //GlobalCEFApp.ResourcesDirPath:= UTF8Decode(execPath + 'Resources');
   //GlobalCEFApp.LocalesDirPath:= GlobalCEFApp.ResourcesDirPath + '/locales';
@@ -126,14 +135,25 @@ begin
   GlobalCEFApp.OnContextReleased:= @ContextReleasedEvent;
   GlobalCEFApp.OnProcessMessageReceived:= @ProcessMessageReceivedEvent;
 
-{$IFDEF CEF_SINGLE_PROCESS}
+  {$IFDEF CEF_SINGLE_PROCESS}
   GlobalCEFAPP.SingleProcess:= True;
-{$ENDIF}
+  {$ENDIF}
 
+  {$IFDEF DARWIN}  // $IFDEF MACOSX
+  // use External Pump for message-loop
+  GlobalCEFWorkScheduler:= TCEFWorkScheduler.Create(nil);
+  GlobalCEFApp.ExternalMessagePump:= True;
+  GlobalCEFApp.MultiThreadedMessageLoop:= False;
+  GlobalCEFApp.OnScheduleMessagePumpWork:= @GlobalCEFApp_OnScheduleMessagePumpWork;
+  {$ENDIF}
+
+  {$IFDEF WINDOWS}
   GlobalCEFApp.cache:= 'cache';
-  GlobalCEFApp.LogFile:= 'debug.log';
-  GlobalCEFApp.LogSeverity:= LOGSEVERITY_INFO;
-  GlobalCEFApp.EnablePrintPreview:= True;
+  //GlobalCEFApp.LogFile:= 'debug.log';
+  //GlobalCEFApp.LogSeverity:= LOGSEVERITY_INFO;
+  //GlobalCEFApp.EnablePrintPreview:= True;
+  {$ENDIF}
+
   GlobalCEFApp.DisableWebSecurity:= True;
 end;
 
@@ -158,7 +178,11 @@ begin
       s:= dogrootDefault;
       i:= sl.IndexOfName('dogroot');
       if i >= 0 then sl.GetNameValue(i, s1, s);
+      {$IFDEF DARWIN}  // $IFDEF MACOSX
+      dogroot:= IncludeTrailingPathDelimiter(CreateAbsolutePath(s, execPath+'Contents/Resources/'));
+      {$ELSE}
       dogroot:= IncludeTrailingPathDelimiter(CreateAbsolutePath(s, execPath));
+      {$ENDIF}
 
       restroot:= restrootDefault;
       i:= sl.IndexOfName('restroot');
@@ -172,7 +196,11 @@ begin
       if i >= 0 then sl.GetNameValue(i, s1, s);
       GlobalCEFApp.UserAgent:= UTF8Decode(s);
     except
+      {$IFDEF DARWIN}  // $IFDEF MACOSX
+      dogroot:= IncludeTrailingPathDelimiter(CreateAbsolutePath(dogrootDefault, execPath+'Contents/Resources/'));
+      {$ELSE}
       dogroot:= IncludeTrailingPathDelimiter(CreateAbsolutePath(dogrootDefault, execPath));
+      {$ENDIF}
       s:= '';
       {$IFDEF Windows}
       s:= GetDefaultCEFUserAgent;

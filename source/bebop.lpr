@@ -12,10 +12,12 @@ uses
   {$IFDEF Win32}
   Windows,
   {$ENDIF}
+  uCEFLazarusCocoa, // required for Cocoa
   Interfaces, // this includes the LCL widgetset
-  Forms, uCEFApplication, uCEFConstants, unit1, unit_js,
-  unit_mod_fs, unit_mod_project, unit_global, unit_mod_child_process,
-  unit_thread, unit_mod_path, unit_mod_util, unit_mod_process, unit_rest;
+  Forms, uCEFApplication, uCEFConstants, uCEFWorkScheduler,
+  unit1, unit_js, unit_mod_fs, unit_mod_project, unit_global,
+  unit_mod_child_process, unit_thread, unit_mod_path, unit_mod_util,
+  unit_mod_process, unit_rest;
 
 {.$R *.res}
 
@@ -25,6 +27,9 @@ uses
 {$ENDIF}
 
 begin
+  {$IFDEF DARWIN}  // $IFDEF MACOSX
+  AddCrDelegate;
+  {$ENDIF}
   GlobalCEFApp:= TCefApplication.Create;
   try
     InitGlobalCEFApp;
@@ -37,8 +42,9 @@ begin
       Application.Run;
     end;
   finally
+    if Assigned(GlobalCEFWorkScheduler) then GlobalCEFWorkScheduler.StopScheduler;
     DestroyGlobalCEFApp;
+    DestroyGlobalCEFWorkScheduler;
   end;
 end.
-
 

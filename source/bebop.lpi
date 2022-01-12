@@ -10,6 +10,7 @@
       <SessionStorage Value="InProjectDir"/>
       <Title Value="bebop"/>
       <Scaled Value="True"/>
+      <NSPrincipalClass Value="TCrCocoaApplication"/>
       <ResourceType Value="res"/>
       <UseXPManifest Value="True"/>
       <XPManifest>
