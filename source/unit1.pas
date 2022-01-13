@@ -123,7 +123,7 @@ procedure InitGlobalCEFApp;
 begin
   execPath:= ExtractFilePath(ParamStr(0));
   {$IFDEF DARWIN}  // $IFDEF MACOSX
-  execPath:= CreateAbsolutePath(execPath+'../../', execPath);
+  execPath:= CreateAbsolutePath('../../', execPath);
   {$ENDIF}
 
   //GlobalCEFApp.FrameworkDirPath:= UTF8Decode(execPath + 'Release');
@@ -140,6 +140,8 @@ begin
   {$ENDIF}
 
   {$IFDEF DARWIN}  // $IFDEF MACOSX
+  GlobalCEFAPP.SingleProcess:= True; /////!!!!!
+
   // use External Pump for message-loop
   GlobalCEFWorkScheduler:= TCEFWorkScheduler.Create(nil);
   GlobalCEFApp.ExternalMessagePump:= True;
