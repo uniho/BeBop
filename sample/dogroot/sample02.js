@@ -99,7 +99,8 @@ export const main = async props => {
   }
 
   //
-  ReactDOM.render(React.createElement(App), document.getElementById('App'))
+  const root = ReactDOM.createRoot(document.getElementById("App"))
+  root.render(React.createElement(App))
 
   injectGlobal`
   body {
