@@ -1,7 +1,11 @@
 ## Next version
 
-* `browser.loadURL()` has been deprecated. Please use `window.location.href = newURL` instead.
+* Not yet.
 
+## v1.0.2+101.0.18
+
+* CEF 101.0.18 / Lazarus 2.2.2 / FPC 3.2.2
+* `browser.loadURL()` has been deprecated. Please use `window.location.href = newURL` instead.
 * `browser.goBack()` and `browser.goForward()` have been deprecated. Please use [`window.history.back()`](https://developer.mozilla.org/en-US/docs/Web/API/History/back) and [`window.history.forward()`](https://developer.mozilla.org/en-US/docs/Web/API/History/forward) instead.
 
 ## v1.0.1+96.0.18
