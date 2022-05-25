@@ -2,3 +2,7 @@
 /bin
 /source/lib
 /source/backup
+/source/apphelper/backup
+/source/apphelper/lib
+/source/apphelper/AppHelper.exe
+/source/apphelper/*.lps
