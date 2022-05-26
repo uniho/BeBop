@@ -283,7 +283,13 @@ procedure TForm1.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
   FCanClose:= False;
   ThreadShutdownCef:= TThreadShutdownCef.Create;
-  Form1.Chromium.CloseAllBrowsers;
+  //Self.Chromium.CloseAllBrowsers;
+  Self.Chromium.CloseBrowser(True);
+  while Self.Chromium.HasBrowser do begin
+    Application.ProcessMessages;
+    if GlobalCEFApp.ExternalMessagePump then GlobalCEFApp.DoMessageLoopWork;
+    Sleep(5);
+  end;
 end;
 
 procedure TForm1.ChromiumAfterCreated(Sender: TObject;
