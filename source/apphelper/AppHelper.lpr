@@ -20,6 +20,9 @@ uses
 begin
   GlobalCEFApp:= TCefApplication.Create;
 
+  GlobalCEFApp.OnWebKitInitialized := @WebKitInitializedEvent;
+  GlobalCEFApp.OnContextCreated:= @ContextCreatedEvent;
+  GlobalCEFApp.OnContextReleased:= @ContextReleasedEvent;
   GlobalCEFApp.OnProcessMessageReceived:= @ProcessMessageReceivedEvent;
 
   // The main process and the subprocess *MUST* have the same GlobalCEFApp
