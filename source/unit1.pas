@@ -140,8 +140,6 @@ begin
   {$ENDIF}
 
   {$IFDEF DARWIN}  // $IFDEF MACOSX
-  GlobalCEFAPP.SingleProcess:= True; /////!!!!!
-
   // use External Pump for message-loop
   GlobalCEFWorkScheduler:= TCEFWorkScheduler.Create(nil);
   GlobalCEFApp.ExternalMessagePump:= True;
@@ -285,11 +283,13 @@ begin
   ThreadShutdownCef:= TThreadShutdownCef.Create;
   //Self.Chromium.CloseAllBrowsers;
   Self.Chromium.CloseBrowser(True);
+  {$IF not Defined(DARWIN)}
   while Self.Chromium.HasBrowser do begin
     Application.ProcessMessages;
     if GlobalCEFApp.ExternalMessagePump then GlobalCEFApp.DoMessageLoopWork;
     Sleep(5);
   end;
+  {$ENDIF}
 end;
 
 procedure TForm1.ChromiumAfterCreated(Sender: TObject;
