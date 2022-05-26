@@ -52,6 +52,8 @@ type
     procedure ChromiumConsoleMessage(Sender: TObject; const browser: ICefBrowser; level: TCefLogSeverity; const message, source: ustring; line: Integer; out Result: Boolean);
     procedure ChromiumConsoleMessageEvent(Data: PtrInt);
     procedure ChromiumBeforeContextMenu(Sender: TObject; const browser: ICefBrowser; const frame: ICefFrame; const params: ICefContextMenuParams; const model: ICefMenuModel);
+  protected
+    procedure RealizeBounds; override;
   public
     Chromium: TChromium;
   end;
@@ -576,6 +578,12 @@ procedure TForm1.ChromiumBeforeContextMenu(Sender: TObject;
   const params: ICefContextMenuParams; const model: ICefMenuModel);
 begin
   model.Clear; // Disable the context menu
+end;
+
+procedure TForm1.RealizeBounds;
+begin
+  inherited;
+  // We have to do someting for MacOS?
 end;
 
 type
