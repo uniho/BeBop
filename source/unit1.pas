@@ -52,12 +52,6 @@ type
     procedure ChromiumConsoleMessage(Sender: TObject; const browser: ICefBrowser; level: TCefLogSeverity; const message, source: ustring; line: Integer; out Result: Boolean);
     procedure ChromiumConsoleMessageEvent(Data: PtrInt);
     procedure ChromiumBeforeContextMenu(Sender: TObject; const browser: ICefBrowser; const frame: ICefFrame; const params: ICefContextMenuParams; const model: ICefMenuModel);
-
-    {$IF Defined(LCLGTK2)}
-    procedure WMMove(var Message: TLMMove); message LM_MOVE;
-    procedure WMSize(var Message: TLMSize); message LM_SIZE;
-    procedure WMWindowPosChanged(var Message: TLMWindowPosChanged); message LM_WINDOWPOSCHANGED;
-    {$ENDIF}
   public
     Chromium: TChromium;
   end;
@@ -300,7 +294,7 @@ end;
 
 procedure TForm1.BrowserCreated(Data: PtrInt);
 begin
-  CEFWindowParent.UpdateSize;
+  // CEFWindowParent.UpdateSize; // unnecessary with CEF v100.x or Lazarus 2.2.2?
   FreeAndNil(ThreadWakeupCef);
 end;
 
@@ -721,26 +715,6 @@ procedure TForm1.ChromiumGetResourceRequestHandler(Sender: TObject;
 begin
   //disable_default_handling:= True;
 end;
-
-{$IF Defined(LCLGTK2)}
-procedure TForm1.WMMove(var Message: TLMMove);
-begin
-  inherited;
-  Chromium.NotifyMoveOrResizeStarted;
-end;
-
-procedure TForm1.WMSize(var Message: TLMSize);
-begin
-  inherited;
-  Chromium.NotifyMoveOrResizeStarted;
-end;
-
-procedure TForm1.WMWindowPosChanged(var Message: TLMWindowPosChanged);
-begin
-  inherited;
-  Chromium.NotifyMoveOrResizeStarted;
-end;
-{$ENDIF}
 
 { TThreadWakeupCef }
 
