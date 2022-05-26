@@ -283,7 +283,7 @@ begin
   ThreadShutdownCef:= TThreadShutdownCef.Create;
   //Self.Chromium.CloseAllBrowsers;
   Self.Chromium.CloseBrowser(True);
-  {$IF not Defined(DARWIN)}
+  {$IF Defined(WINDOWS)}
   while Self.Chromium.HasBrowser do begin
     Application.ProcessMessages;
     if GlobalCEFApp.ExternalMessagePump then GlobalCEFApp.DoMessageLoopWork;
