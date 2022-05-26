@@ -9,21 +9,9 @@ then
   SRC=./AppHelper.app
 fi
 
-if [ "$1" = "" ] || [ ! -e "$DEST" ] || [ ! -e "$SRC" ];
+if [ "$DEST" = "" ];
 then
-  echo "Usage"
-  echo " $0 destpath/project.app"
-  echo " $0 destpath/project.app  sourcedir/AppHelper.app"
-  echo
-  if [ ! -e "$DEST" ];
-  then
-    echo "Error: Target app bundle not found. (Did you compile AND create the bundle?)"
-  fi
-  if [ ! -e "$SRC" ];
-  then
-    echo "Error: Source (AppHelper) app bundle not found. (Did you compile AND create the bundle?)"
-  fi
-  exit;
+  DEST=../../bin/x86_64-darwin/bebop.app
 fi
 
 SRCAPP=$(basename "$SRC")
