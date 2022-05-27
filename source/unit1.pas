@@ -3,6 +3,9 @@ unit Unit1;
 {.$DEFINE CEF_SINGLE_PROCESS} // Define for debug only.
 
 {$mode objfpc}{$H+}
+{$IF Defined(DARWIN)}
+  {$ModeSwitch objectivec1}
+{$ENDIF}
 
 interface
 
@@ -64,6 +67,9 @@ procedure InitGlobalCEFApp;
 
 implementation
 uses
+{$IF Defined(DARWIN)}
+  CocoaAll,
+{$ENDIF}
   LCLIntf, variants, LCLType, LazFileUtils,
   uCEFConstants, uCEFApplication, uCEFResourceHandler, uCEFWorkScheduler,
   uCEFMiscFunctions,
@@ -557,9 +563,17 @@ begin
 end;
 
 procedure TForm1.RealizeBounds;
+{$IF Defined(DARWIN)}
+var
+  size: NSSize;
+{$ENDIF}
 begin
   inherited;
-  // We have to do someting for MacOS?
+{$IF Defined(DARWIN)}
+  size.width:= Self.ClientWidth;
+  size.height:= Self.ClientHeight;
+  NSView(Self.Chromium.WindowHandle).setFrameSize(size);
+{$ENDIF}
 end;
 
 type
