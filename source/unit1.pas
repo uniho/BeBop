@@ -28,7 +28,7 @@ type
     FCanClose: boolean;
     procedure ChromiumAfterCreated(Sender: TObject; const browser: ICefBrowser);
     procedure ChromiumBeforeClose(Sender: TObject; const browser: ICefBrowser);
-    procedure ChromiumClose(Sender: TObject; const browser: ICefBrowser; var aAction : TCefCloseBrowserAction);
+    //procedure ChromiumClose(Sender: TObject; const browser: ICefBrowser; var aAction : TCefCloseBrowserAction);
     procedure ChromiumLoadStart(Sender: TObject; const browser: ICefBrowser; const frame: ICefFrame; transitionType: TCefTransitionType);
     procedure ChromiumLoadEnd(Sender: TObject; const Browser: ICefBrowser;
      const Frame: ICefFrame; httpStatusCode: Integer);
@@ -45,7 +45,6 @@ type
     procedure ChromiumGetResourceRequestHandler(Sender: TObject; const browser: ICefBrowser; const frame: ICefFrame; const request: ICefRequest; is_navigation, is_download: boolean; const request_initiator: ustring; var disable_default_handling: boolean; var aExternalResourceRequestHandler : ICefResourceRequestHandler);
     procedure FormShowEvent(Data: PtrInt);
     procedure BrowserCreated(Data: PtrInt);
-    procedure BrowserDestroy(Data: PtrInt);
     procedure ChromiumLoadEndEvent(Data: PtrInt);
     procedure ChromiumLoadErrorEvent(Data: PtrInt);
     procedure ChromiumKeyDownEvent(Data: PtrInt);
@@ -222,7 +221,7 @@ begin
   Chromium.WebRTCMultipleRoutes:= STATE_DISABLED;
   Chromium.WebRTCNonproxiedUDP:= STATE_DISABLED;
   Chromium.OnAfterCreated:= @ChromiumAfterCreated;
-  Chromium.OnClose:= @ChromiumClose;
+  //Chromium.OnClose:= @ChromiumClose;
   Chromium.OnBeforeClose:= @ChromiumBeforeClose;
   Chromium.OnLoadStart:= @ChromiumLoadStart;
   Chromium.OnLoadEnd:= @ChromiumLoadEnd;
@@ -277,15 +276,8 @@ procedure TForm1.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
   FCanClose:= False;
   ThreadShutdownCef:= TThreadShutdownCef.Create;
-  //Self.Chromium.CloseAllBrowsers;
-  Self.Chromium.CloseBrowser(True);
-  {$IF Defined(WINDOWS)}
-  while Self.Chromium.HasBrowser do begin
-    Application.ProcessMessages;
-    if GlobalCEFApp.ExternalMessagePump then GlobalCEFApp.DoMessageLoopWork;
-    Sleep(5);
-  end;
-  {$ENDIF}
+  Self.CEFWindowParent.Chromium:= Self.Chromium;
+  FreeAndNil(Self.CEFWindowParent);
 end;
 
 procedure TForm1.ChromiumAfterCreated(Sender: TObject;
@@ -305,22 +297,6 @@ procedure TForm1.ChromiumBeforeClose(Sender: TObject; const browser: ICefBrowser
 begin
   // The main browser is being destroyed
   FCanClose := Chromium.BrowserId = 0;
-end;
-
-procedure TForm1.ChromiumClose(Sender: TObject; const browser: ICefBrowser;
-  var aAction: TCefCloseBrowserAction);
-begin
-  if (browser <> nil) and
-     (Chromium.BrowserId = browser.Identifier) and
-     (CEFWindowParent <> nil) then begin
-    Application.QueueAsyncCall(@BrowserDestroy, 0);
-    aAction := cbaDelay;
-  end;
-end;
-
-procedure TForm1.BrowserDestroy(Data: PtrInt);
-begin
-  FreeAndNil(CEFWindowParent);
 end;
 
 procedure TForm1.ChromiumLoadStart(Sender: TObject; const browser: ICefBrowser;
@@ -779,7 +755,10 @@ end;
 procedure TThreadShutdownCef.Execute;
 begin
   canClose:= false;
-  while not canClose do Synchronize(@Check);
+  while not canClose do begin
+    Synchronize(@Check);
+    sleep(10);
+  end;
 end;
 
 end.
