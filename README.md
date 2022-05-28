@@ -83,21 +83,6 @@ You can create your own native modules and in-process REST API. See source files
 1. Click `Project` -> `Open Project`, and select `/source/bebop.lpi`
 1. Click `Run` -> `Build`
 
-## ⚙ Development Environment
-
-### Windows (win32/win64)
-Lazarus 2.2.2 / FPC 3.2.2
-
-### Linux (x86_64-linux-gtk2)
-Lazarus 2.0.12 / FPC 3.2.0 or 3.2.2
-  
-Both Lazarus 2.2.0 and 2.2.2 on Linux x86_64-linux-gtk2 is very buggy, so you have to use above.
-
-### MacOS (x86_64-darwin-cocoa)
-Lazarus 2.2.2 / FPC 3.2.2
-  
-Don't forget to build /source/apphelper/AppHelper.lpi.
-
 ## 🤔 Simple? Easy?
 BeBop is a development tool for general desktop applications. Unlike a kind of system batch process in the cool black window, we have to create an application with the user-friendly interface for our users.  
 The user-friendly interface needs asyncronus process no lagging, so you need to figure the `Promise` in JavaScript out.
@@ -129,7 +114,18 @@ BeBop framework has a powerful in-process REST API based on mORMot.
 mORMot is a huge library / framework, but FPC links just the necessary part.
 
 ### ♪ Lazarus and FPC
-See above.
+We are using below.
+#### Windows (win32/win64)
+Lazarus 2.2.2 + FPC 3.2.2
+
+#### Linux (x86_64-linux-gtk2)
+Lazarus 2.0.12 + FPC 3.2.0 or 3.2.2
+  
+NOTE: Both Lazarus 2.2.0 and 2.2.2 on Linux x86_64-linux-gtk2 is very buggy, so we have to use a bit old version.
+
+#### MacOS (x86_64-darwin-cocoa)
+Lazarus 2.2.2 + FPC 3.2.2
+
 
 ## 🎵 Code of conduct
 This project is learning from [The Rust's Code of conduct](https://www.rust-lang.org/policies/code-of-conduct):
