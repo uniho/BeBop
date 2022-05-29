@@ -68,7 +68,7 @@ procedure InitGlobalCEFApp;
 implementation
 uses
 {$IF Defined(DARWIN)}
-  CocoaAll,
+  CocoaAll, BaseUnix,
 {$ENDIF}
   LCLIntf, variants, LCLType, LazFileUtils,
   uCEFConstants, uCEFApplication, uCEFResourceHandler, uCEFWorkScheduler,
@@ -165,55 +165,69 @@ end;
 { TForm1 }
 
 procedure TForm1.FormCreate(Sender: TObject);
-const
-  dogrootDefault = 'dogroot';
-  restrootDefault = '~rest';
-var
-  s, s1: string;
-  i: integer;
-  sl: TStringList;
-begin
-  Caption:= '';
 
-  sl:= TStringList.Create;
-  try
+  procedure LoadFromConfigFile(const filename: string);
+  const
+    dogrootDefault = 'dogroot';
+    restrootDefault = '~rest';
+  var
+    s, s0, dogrootBase: string;
+    i: integer;
+    sl: TStringList;
+  begin
+    sl:= TStringList.Create;
     try
-      sl.LoadFromFile(ChangeFileExt(ParamStr(0), '.cfg'));
+      {$IF Defined(DARWIN)}
+      s:= fpReadLink(ParamStr(0));
+      if s = '' then begin
+        dogrootBase:= execPath + 'Contents/Resources/';
+      end else begin
+        dogrootBase:= ExtractFilePath(CreateAbsolutePath(s, ExtractFilePath(ParamStr(0))));
+      end;
+      {$ELSE}
+      dogrootBase:= execPath;
+      {$ENDIF}
+
+      unit_global.dogroot:= IncludeTrailingPathDelimiter(CreateAbsolutePath(dogrootDefault, dogrootBase));
+      unit_global.restroot:= restrootDefault;
+      {$IF Defined(WINDOWS)}
+      GlobalCEFApp.UserAgent:= UTF8Decode(GetDefaultCEFUserAgent);
+      {$ENDIF}
+
+      sl.LoadFromFile(filename);
 
       s:= dogrootDefault;
       i:= sl.IndexOfName('dogroot');
-      if i >= 0 then sl.GetNameValue(i, s1, s);
-      {$IFDEF DARWIN}  // $IFDEF MACOSX
-      dogroot:= IncludeTrailingPathDelimiter(CreateAbsolutePath(s, execPath+'Contents/Resources/'));
-      {$ELSE}
-      dogroot:= IncludeTrailingPathDelimiter(CreateAbsolutePath(s, execPath));
-      {$ENDIF}
+      if i >= 0 then begin
+        sl.GetNameValue(i, s0, s);
+        unit_global.dogroot:= IncludeTrailingPathDelimiter(CreateAbsolutePath(s, dogrootBase));
+      end;
 
-      restroot:= restrootDefault;
       i:= sl.IndexOfName('restroot');
-      if i >= 0 then sl.GetNameValue(i, s1, restroot);
+      if i >= 0 then begin
+        sl.GetNameValue(i, s0, unit_global.restroot);
+      end;
 
-      s:= '';
-      {$IFDEF Windows}
-      s:= GetDefaultCEFUserAgent;
-      {$ENDIF}
       i:= sl.IndexOfName('UserAgent');
-      if i >= 0 then sl.GetNameValue(i, s1, s);
-      GlobalCEFApp.UserAgent:= UTF8Decode(s);
-    except
-      {$IFDEF DARWIN}  // $IFDEF MACOSX
-      dogroot:= IncludeTrailingPathDelimiter(CreateAbsolutePath(dogrootDefault, execPath+'Contents/Resources/'));
-      {$ELSE}
-      dogroot:= IncludeTrailingPathDelimiter(CreateAbsolutePath(dogrootDefault, execPath));
-      {$ENDIF}
-      s:= '';
-      {$IFDEF Windows}
-      s:= GetDefaultCEFUserAgent;
-      {$ENDIF}
-      GlobalCEFApp.UserAgent:= UTF8Decode(s);
+      if i >= 0 then begin
+        sl.GetNameValue(i, s0, s);
+        GlobalCEFApp.UserAgent:= UTF8Decode(s);
+      end;
+    finally
+      sl.Free;
     end;
-  finally
-    sl.Free;
+  end;
+
+begin
+  Caption:= '';
+
+  try
+    {$IF Defined(DARWIN)}
+    LoadFromConfigFile(ChangeFileExt(execPath + 'Contents/Resources/' + ExtractFileName(ParamStr(0)), '.cfg'));
+    {$ELSE}
+    LoadFromConfigFile(ChangeFileExt(ParamStr(0), '.cfg'));
+    {$ENDIF}
+  except
   end;
 
   CEFWindowParent:= TCEFLinkedWindowParent.Create(Self);
