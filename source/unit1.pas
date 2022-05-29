@@ -68,7 +68,7 @@ procedure InitGlobalCEFApp;
 implementation
 uses
 {$IF Defined(DARWIN)}
-  CocoaAll, BaseUnix,
+  CocoaAll,
 {$ENDIF}
   LCLIntf, variants, LCLType, LazFileUtils,
   uCEFConstants, uCEFApplication, uCEFResourceHandler, uCEFWorkScheduler,
@@ -177,17 +177,7 @@ procedure TForm1.FormCreate(Sender: TObject);
   begin
     sl:= TStringList.Create;
     try
-      {$IF Defined(DARWIN)}
-      s:= fpReadLink(ParamStr(0));
-      if s = '' then begin
-        dogrootBase:= execPath + 'Contents/Resources/';
-      end else begin
-        dogrootBase:= ExtractFilePath(CreateAbsolutePath(s, ExtractFilePath(ParamStr(0))));
-      end;
-      {$ELSE}
-      dogrootBase:= execPath;
-      {$ENDIF}
-
+      dogrootBase:= ExtractFilePath(filename);
       unit_global.dogroot:= IncludeTrailingPathDelimiter(CreateAbsolutePath(dogrootDefault, dogrootBase));
       unit_global.restroot:= restrootDefault;
       {$IF Defined(WINDOWS)}
