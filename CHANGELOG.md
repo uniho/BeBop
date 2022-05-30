@@ -1,6 +1,7 @@
 ## Next version
 
 * 🚀 Launch BeBop for MacOS!
+* Add icon.
 
 ## v1.0.2+101.0.18
 

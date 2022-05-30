@@ -208,6 +208,22 @@ procedure TForm1.FormCreate(Sender: TObject);
     end;
   end;
 
+  procedure SetIcon;
+  var
+    picture: TPicture;
+  begin
+    picture:= TPicture.Create;
+    try
+      try
+        picture.LoadFromFile(ChangeFileExt(ParamStr(0), '.ico'));
+        Self.Icon.Assign(picture.Icon);
+      except
+      end;
+    finally
+      picture.Free;
+    end;
+  end;
+
 begin
   Caption:= '';
 
@@ -219,6 +235,10 @@ begin
     {$ENDIF}
   except
   end;
+
+  {$IF not Defined(DARWIN)}
+  SetIcon;
+  {$ENDIF}
 
   CEFWindowParent:= TCEFLinkedWindowParent.Create(Self);
   CEFWindowParent.Parent:= Self;
