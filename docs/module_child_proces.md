@@ -8,6 +8,8 @@
 * `options` \<Object>
   * `codePage` \<integer> Default: `0`
     see: https://docs.microsoft.com/en-us/windows/win32/intl/code-page-identifiers?redirectedfrom=MSDN
+  * `dir` \<string> Working directory of the child process.
+  * `env` \<Array> Environment variables for the child process.
   * `windowsHide` \<boolean> Hide the subprocess console window that would normally be created on Windows systems. Default: `true`
   * (ToDo: signal \<AbortSignal> allows aborting an in-progress.)
 * Returns: \<Promise> Fulfills with a \<SubProcess> object.

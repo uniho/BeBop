@@ -2,6 +2,8 @@
 
 * 🚀 Launch BeBop for MacOS!
 * Add icon.
+* [Child process Module] Add dir option.
+* [Child process Module] Add env option.
 
 ## v1.0.2+101.0.18
 

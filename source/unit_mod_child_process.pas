@@ -203,7 +203,7 @@ var
   i, len, exitStatus: integer;
   pro: TProcess;
   codePage: integer;
-  argList: ICefListValue;
+  argList, list: ICefListValue;
   option, dic, func: ICefDictionaryValue;
 begin
   if Args.GetSize < 1 then Raise Exception.Create(ERROR_INVALID_PARAM_COUNT);
@@ -245,6 +245,16 @@ begin
 
   pro.Options:= pro.Options + [poNoConsole, poUsePipes];
   if Assigned(option) then begin
+    if option.HasKey('dir') then begin
+      pro.CurrentDirectory:= UTF8Encode(option.GetString('dir'));
+    end;
+
+    if option.HasKey('env') then begin
+      list:= option.GetList('env');
+      len:= list.GetSize;
+      for i:= 0 to len-1 do pro.Environment.Add(UTF8Encode(list.GetString(i)));
+    end;
+
     {$IFDEF Windows}
     if option.GetBool('windowsHide') = false then
       pro.Options:= pro.Options - [poNoConsole, poUsePipes];
