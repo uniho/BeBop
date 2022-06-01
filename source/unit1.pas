@@ -567,7 +567,7 @@ var
 begin
   s:= TQueueAsyncCallDataString(Data).str;
   TQueueAsyncCallDataString(Data).Free;
-  InformationText.Caption:= s;
+  InformationText.Caption:= StringReplace(s, '&', '&&', [rfReplaceAll]);
   InformationPanel.BringToFront;
   InformationPanel.Show;
   if not Self.Visible then Self.Show;
