@@ -625,6 +625,7 @@ function TCustomResourceHandler.open(const request: ICefRequest;
   var handle_request: boolean; const callback: ICefCallback): boolean;
 var
   body: string;
+  p: integer;
 begin
   FFileName:= UTF8Encode(request.Url);
   FFileName:= normalizeResourceName(FFileName);
@@ -648,6 +649,11 @@ begin
   end;
 
   FFileName:= CreateAbsolutePath(FFileName, dogRoot);
+  p:= Pos('#', FFileName);
+  if p > 0 then FFileName:= Copy(FFileName, 1, p-1);
+  p:= Pos('?', FFileName);
+  if p > 0 then FFileName:= Copy(FFileName, 1, p-1);
+
   Result:= False;
   try
     FStream:= TFileStream.Create(FFileName, fmOpenRead);
