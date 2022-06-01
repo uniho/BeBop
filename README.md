@@ -71,7 +71,7 @@ Default key mappings:
 * `Backspace` Go back page.
 
 These samples use [ReactJS](https://reactjs.org/), but you don't really need it.
-You can use your favorite JS framework - [jQuery](https://jquery.com/), [AngularJS](https://angularjs.org/), [VueJS](https://vuejs.org/), etc., or even just pure vanilla JavaScript.
+You can use your favorite JS framework - [jQuery](https://jquery.com/), [AngularJS](https://angularjs.org/), [VueJS](https://vuejs.org/), [SolidJS](https://www.solidjs.com/), etc., or even just pure vanilla JavaScript.
 
 Further documents are in the `/docs` directory.
 
