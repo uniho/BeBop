@@ -318,7 +318,7 @@ end;
 
 procedure TForm1.BrowserCreated(Data: PtrInt);
 begin
-  // CEFWindowParent.UpdateSize; // unnecessary with CEF v100.x or Lazarus 2.2.2?
+  // CEFWindowParent.UpdateSize; // unnecessary with CEF v100.x?
   FreeAndNil(ThreadWakeupCef);
 end;
 
@@ -575,7 +575,7 @@ begin
   if not Self.Visible then Self.Show;
 
   {$IF Defined(LCLGTK2)}
-  // GTK2 doesn't show InformationPanel. Why?
+  // GTK2 doesn't show InformationPanel, because many controls don't have a window. They are just painted on their parent.
   Application.MessageBox(PChar(s), 'Error');
   //Chromium.ShowDevTools(Point(0, 0));
   {$ENDIF}
