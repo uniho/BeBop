@@ -332,7 +332,7 @@ end;
 procedure TForm1.ChromiumLoadStart(Sender: TObject; const browser: ICefBrowser;
   const frame: ICefFrame; transitionType: TCefTransitionType);
 begin
-  InformationPanel.Caption:= '';
+  InformationText.Caption:= '';
   InformationPanel.Hide;
 end;
 
