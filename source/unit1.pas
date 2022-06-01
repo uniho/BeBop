@@ -332,6 +332,7 @@ end;
 procedure TForm1.ChromiumLoadStart(Sender: TObject; const browser: ICefBrowser;
   const frame: ICefFrame; transitionType: TCefTransitionType);
 begin
+  InformationPanel.Caption:= '';
   InformationPanel.Hide;
 end;
 
@@ -567,7 +568,8 @@ var
 begin
   s:= TQueueAsyncCallDataString(Data).str;
   TQueueAsyncCallDataString(Data).Free;
-  InformationText.Caption:= StringReplace(s, '&', '&&', [rfReplaceAll]);
+  InformationText.Caption:= InformationText.Caption
+    + StringReplace(s, '&', '&&', [rfReplaceAll]) + #$0d#$0d;
   InformationPanel.BringToFront;
   InformationPanel.Show;
   if not Self.Visible then Self.Show;
