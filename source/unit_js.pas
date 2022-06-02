@@ -487,7 +487,7 @@ begin
   Result:= '';
   l:= Length(us);
   for i:= 1 to l do begin
-    Result:= Result + '\u' + IntToHex(ord(us[i]), 16);
+    Result:= Result + '\u' + IntToHex(ord(us[i]), 4);
   end;
   Result:= '"' + Result + '"';
 end;
