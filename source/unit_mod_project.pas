@@ -519,7 +519,7 @@ end;
 
 procedure TAppTerminateThread.doUnSafe;
 begin
-  Form1.Close;
+  Application.Terminate;
   CefResolve:= TCefValueRef.New;
   CefResolve.SetBool(true);
 end;
