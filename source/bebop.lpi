@@ -95,9 +95,9 @@
       <Filename Value="../bin\$(TargetCPU)-$(TargetOS)\bebop"/>
     </Target>
     <SearchPaths>
-      <IncludeFiles Value="$(ProjOutDir);extlibs\cef4delphi\source;extlibs\mORMot"/>
-      <Libraries Value="extlibs\mORMot\static\$(TargetCPU)-$(TargetOS)"/>
-      <OtherUnitFiles Value="extlibs\cef4delphi\source;extlibs\lua4lazarus;extlibs\mORMot;extlibs\mORMot\SQLite3"/>
+      <IncludeFiles Value="$(ProjOutDir);extlibs\cef4delphi\source;extlibs\mormot2"/>
+      <Libraries Value="extlibs\mormot2\static\$(TargetCPU)-$(TargetOS)"/>
+      <OtherUnitFiles Value="extlibs\cef4delphi\source;extlibs\lua4lazarus;extlibs\mormot2\src\core;extlibs\mormot2\src\rest;extlibs\mormot2\src\lib;extlibs\mormot2\src\crypt;extlibs\mormot2\src\orm;extlibs\mormot2\src\db;extlibs\mormot2\src\soa"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <CodeGeneration>
