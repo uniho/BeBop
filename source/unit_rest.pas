@@ -1,7 +1,6 @@
 unit unit_rest;
 
-{.$DEFINE USE_mORMot}
-{$DEFINE USE_mORMot2}
+{$DEFINE USE_mORMot}
 {$DEFINE USE_REST_TEST}
 
 {$mode ObjFPC}{$H+}
@@ -46,17 +45,10 @@ function GetFromRestApi(const url: string; request: ICefRequest; var status: int
 implementation
 
 uses
-  {$IF Defined(USE_mORMot) or Defined(USE_mORMot2)}
-  {$IF Defined(USE_mORMot2)}
-  mormot.core.base, mormot.core.buffers,
-  {$IF Defined(USE_REST_TEST)}
-  unit_rest_test2, unit_rest_test_sqlite2,
-  {$ENDIF}
-  {$ELSE}
+  {$IF Defined(USE_mORMot)}
   SynCommons,
   {$IF Defined(USE_REST_TEST)}
   unit_rest_test, unit_rest_test_sqlite,
-  {$ENDIF}
   {$ENDIF}
   {$ENDIF}
   unit_global, uCEFTypes;
@@ -72,7 +64,7 @@ var
   i, len: integer;
   restName, path, s: string;
   bodys: TCefPostDataElementArray;
-  {$IF Defined(USE_mORMot) or Defined(USE_mORMot2)}
+  {$IF Defined(USE_mORMot)}
   p: PUTF8Char;
   ru8s1, ru8s2: RawUTF8;
   {$ENDIF}
@@ -111,7 +103,7 @@ begin
       end;
     end;
 
-    {$IF Defined(USE_mORMot) or Defined(USE_mORMot2)}
+    {$IF Defined(USE_mORMot)}
     p:= PUTF8Char(rest.Query);
     while p^ <> #0 do begin
       p:= UrlDecodeNextNameValue(p, ru8s1{%H-}, ru8s2{%H-});

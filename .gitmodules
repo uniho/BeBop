@@ -4,6 +4,3 @@
 [submodule "source/extlibs/mORMot"]
 	path = source/extlibs/mORMot
 	url = https://github.com/synopse/mORMot.git
-[submodule "source/extlibs/mormot2"]
-	path = source/extlibs/mormot2
-	url = https://github.com/synopse/mORMot2.git
