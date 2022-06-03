@@ -49,15 +49,11 @@ type
 //
 function importCreate(const name: string): ICefv8Value;
 var
-  v1, v2: ICefv8Value;
+  v1: ICefv8Value;
   handler: ICefv8Handler;
   acr: ICefV8Accessor;
 begin
-  //g:= TCefv8ContextRef.Current.GetGlobal;
-  //gvar:= g.GetValueByKey(G_VAR_IN_JS_NAME);
-  //if gvar.HasValueByKey(UTF8Decode(name)) then Exit;
-
-  v2:= TCefv8ValueRef.NewObject(nil, nil);
+  Result:= TCefv8ValueRef.NewObject(nil, nil);
 
   handler:= TV8HandlerSafe.Create(name, 'app.showMessage');
   v1:= TCefv8ValueRef.NewObject(nil, nil);
@@ -66,13 +62,13 @@ begin
   handler:= TV8HandlerSafe.Create(name, 'app.terminate');
   v1.SetValueByKey('terminate',
    TCefv8ValueRef.NewFunction('terminate', handler), V8_PROPERTY_ATTRIBUTE_NONE);
-  v2.SetValueByKey('app', v1, V8_PROPERTY_ATTRIBUTE_NONE);
+  Result.SetValueByKey('app', v1, V8_PROPERTY_ATTRIBUTE_NONE);
 
   acr:= TV8AccessorScreen.Create;
   v1:= TCefv8ValueRef.NewObject(acr, nil);
   v1.SetValueByAccessor('workAreaWidth', V8_ACCESS_CONTROL_DEFAULT, V8_PROPERTY_ATTRIBUTE_NONE);
   v1.SetValueByAccessor('workAreaHeight', V8_ACCESS_CONTROL_DEFAULT, V8_PROPERTY_ATTRIBUTE_NONE);
-  v2.SetValueByKey('screen', v1, V8_PROPERTY_ATTRIBUTE_NONE);
+  Result.SetValueByKey('screen', v1, V8_PROPERTY_ATTRIBUTE_NONE);
 
   acr:= TV8AccessorMainform.Create;
   v1:= TCefv8ValueRef.NewObject(acr, nil);
@@ -95,7 +91,7 @@ begin
   //handler:= TV8HandlerSafe.Create(name, 'mainform.close');
   //v1.SetValueByKey('close',
   // TCefv8ValueRef.NewFunction('close', handler), V8_PROPERTY_ATTRIBUTE_NONE);
-  v2.SetValueByKey('mainform', v1, V8_PROPERTY_ATTRIBUTE_NONE);
+  Result.SetValueByKey('mainform', v1, V8_PROPERTY_ATTRIBUTE_NONE);
 
   handler:= TV8HandlerSafe.Create(name, 'browser.reload');
   v1:= TCefv8ValueRef.NewObject(nil, nil);
@@ -113,9 +109,7 @@ begin
   handler:= TV8HandlerSafe.Create(name, 'browser.goForward');
   v1.SetValueByKey('goForward',
    TCefv8ValueRef.NewFunction('goForward', handler), V8_PROPERTY_ATTRIBUTE_NONE);
-  v2.SetValueByKey('browser', v1, V8_PROPERTY_ATTRIBUTE_NONE);
-
-  Result:= v2;
+  Result.SetValueByKey('browser', v1, V8_PROPERTY_ATTRIBUTE_NONE);
 end;
 
 //
@@ -1050,7 +1044,7 @@ end;
 //
 const
   _import = G_VAR_IN_JS_NAME + '["~' + MODULE_NAME + '"]';
-  _body = '' +
+  _body = _import + '.__init__();' +
      'export const app={};' +
        'app.showMessage=' + _import + '.app.showMessage;' +
        'app.terminate=' + _import + '.app.terminate;' +
@@ -1096,7 +1090,7 @@ const
        'browser.reload=' + _import + '.browser.reload;' +
        'browser.showDevTools=' + _import + '.browser.showDevTools;' +
 
-     ';';
+     '';
 
 initialization
   // Regist module handler

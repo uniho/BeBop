@@ -130,6 +130,13 @@ type
     function Execute(const name: ustring; const obj: ICefv8Value; const arguments: TCefv8ValueArray; var retval: ICefv8Value; var exception: ustring): Boolean; override;
   end;
 
+  { TV8HandlerInitImport }
+
+  TV8HandlerInitImport = class(TCefv8HandlerOwn)
+  protected
+    function Execute(const name: ustring; const obj: ICefv8Value; const arguments: TCefv8ValueArray; var retval: ICefv8Value; var exception: ustring): Boolean; override;
+  end;
+
 
 procedure WebKitInitializedEvent;
 begin
@@ -139,12 +146,33 @@ end;
 procedure ContextCreatedEvent(const browser: ICefBrowser; const frame: ICefFrame; const context: ICefv8Context);
 var
   msg: ICefProcessMessage;
+  us: ustring;
+  i, len: integer;
+  v1, v2, g: ICefv8Value;
+  handler: TModuleHandlers;
 begin
   context.Global.SetValueByKey('require',
    TCefv8ValueRef.NewFunction('require', TV8HandlerGlobal.Create), V8_PROPERTY_ATTRIBUTE_NONE);
 
   context.Global.SetValueByKey('requireSync',
    TCefv8ValueRef.NewFunction('requireSync', TV8HandlerGlobal.Create), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  // window.G_VAR_IN_JS_NAME = {};
+  v1:= TCefv8ValueRef.NewObject(nil, nil);
+  context.Global.SetValueByKey(UTF8Decode(G_VAR_IN_JS_NAME), v1, V8_PROPERTY_ATTRIBUTE_NONE);
+
+  len:= ModuleHandlerList.Count;
+  for i:= 0 to len-1 do begin
+    handler:= TModuleHandlers(ModuleHandlerList.Objects[i]);
+    if Assigned(handler.creater) then begin
+      us:= UTF8Decode(ModuleHandlerList[i]);
+      g:= context.Global.GetValueByKey(G_VAR_IN_JS_NAME);
+      v2:= TCefv8ValueRef.NewObject(nil, nil);
+      v2.SetValueByKey('__init__',
+       TCefv8ValueRef.NewFunction(us, TV8HandlerInitImport.Create), V8_PROPERTY_ATTRIBUTE_NONE);
+      g.SetValueByKey(us, v2, V8_PROPERTY_ATTRIBUTE_NONE);
+    end;
+  end;
 
   msg:= TCefProcessMessageRef.New('context_created');
   frame.SendProcessMessage(PID_BROWSER, msg);
@@ -263,7 +291,6 @@ var
   us, us2: ustring;
   sl: TStringList;
   i, len: integer;
-  handler: TModuleHandlers;
 begin
   aHandled:= True;
   context:= frame.GetV8Context;
@@ -343,21 +370,6 @@ begin
           finally
             ipc.DeleteValueByKey(us);
           end;
-        end;
-      finally
-        context.Exit;
-      end;
-    end;
-    'import': begin
-      context.Enter;
-      try
-        us:= message.ArgumentList.GetString(0);
-        g:= TCefv8ContextRef.Current.GetGlobal.GetValueByKey(G_VAR_IN_JS_NAME);
-        if not g.HasValueByKey(us) then begin
-          i:= ModuleHandlerList.IndexOf(UTF8Encode(us));
-          handler:= TModuleHandlers(ModuleHandlerList.Objects[i]);
-          v1:= handler.creater(UTF8Encode(us));
-          g.SetValueByKey(us, v1, V8_PROPERTY_ATTRIBUTE_NONE);
         end;
       finally
         context.Exit;
@@ -609,12 +621,32 @@ function TV8HandlerRequire.Execute(const name: ustring; const obj: ICefv8Value;
   var exception: ustring): Boolean;
 var
   i: integer;
-  handlers: TModuleHandlers;
+  handler: TModuleHandlers;
 begin
   Result:= False;
   i:= ModuleHandlerList.IndexOf(UTF8Encode(name));
-  handlers:= TModuleHandlers(ModuleHandlerList.Objects[i]);
-  Result:= handlers.requireExecute(name, obj, arguments, retval, exception);
+  handler:= TModuleHandlers(ModuleHandlerList.Objects[i]);
+  Result:= handler.requireExecute(name, obj, arguments, retval, exception);
+end;
+
+{ TV8HandlerInitImport }
+
+function TV8HandlerInitImport.Execute(const name: ustring;
+  const obj: ICefv8Value; const arguments: TCefv8ValueArray;
+  var retval: ICefv8Value; var exception: ustring): Boolean;
+var
+  s: string;
+  v1, g: ICefv8Value;
+  i: integer;
+  handler: TModuleHandlers;
+begin
+  s:= UTF8Encode(name);
+  i:= ModuleHandlerList.IndexOf(s);
+  handler:= TModuleHandlers(ModuleHandlerList.Objects[i]);
+  v1:= handler.creater(s);
+  g:= TCefv8ContextRef.Current.GetGlobal.GetValueByKey(G_VAR_IN_JS_NAME);
+  g.SetValueByKey(name, v1, V8_PROPERTY_ATTRIBUTE_NONE);
+  Result:= True;
 end;
 
 { TV8HandlerSafe }

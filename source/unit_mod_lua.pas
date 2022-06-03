@@ -376,9 +376,9 @@ end;
 //
 const
   _import = G_VAR_IN_JS_NAME + '["~' + MODULE_NAME + '"]';
-  _body = '' +
+  _body = _import + '.__init__();' +
      'export const run=' + _import + '.run;' +
-     ';';
+     '';
 
 initialization
   // Regist module handler

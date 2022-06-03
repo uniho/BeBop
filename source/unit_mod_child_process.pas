@@ -513,9 +513,9 @@ end;
 //
 const
   _import = G_VAR_IN_JS_NAME + '["~' + MODULE_NAME + '"]';
-  _body = '' +
+  _body = _import + '.__init__();' +
      'export const execFile=' + _import + '.execFile;' +
-     ';';
+     '';
 
 initialization
   // Regist module handler

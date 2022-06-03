@@ -10,7 +10,7 @@ unit Unit1;
 interface
 
 uses
-  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls, LMessages, StdCtrls,
+  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls, StdCtrls,
   uCEFChromium, uCEFLinkedWindowParent, uCEFTypes, uCEFInterfaces;
 
 type
@@ -506,7 +506,7 @@ procedure TForm1.ChromiumProcessMessageReceived(Sender: TObject;
 
     us:= UTF8Decode(''
      + '{'
-     + 'const v=window.' + G_VAR_IN_JS_NAME + '={};'
+     + 'const v=window.' + G_VAR_IN_JS_NAME + ';'
      + 'v._ipc={};'
      + 'window.__dogroot = ' + StringPasToJS(dogroot) + ';'
      + 'window.__restroot = ' + StringPasToJS(restroot) + ';'
@@ -629,7 +629,6 @@ var
   body: string;
   i, p: integer;
   handler: TModuleHandlers;
-  msg: ICefProcessMessage;
 begin
   FFileName:= UTF8Encode(request.Url);
   FFileName:= normalizeResourceName(FFileName);
@@ -661,13 +660,7 @@ begin
       if i < 0 then Raise Exception.Create('');
       handler:= TModuleHandlers(ModuleHandlerList.Objects[i]);
       if handler.body = '' then Raise Exception.Create('');
-
-      msg:= TCefProcessMessageRef.New('import');
-      msg.ArgumentList.SetString(0, UTF8Decode(FFileName));
-      Form1.Chromium.SendProcessMessage(PID_RENDERER, msg);
-
       FStream:= TStringStream.Create(handler.body);
-      //FStream:= TStringStream.Create('');
       if Assigned(callback) then callback.Cont;
       Result:= True;
     except

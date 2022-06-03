@@ -291,7 +291,7 @@ end;
 //
 const
   _import = G_VAR_IN_JS_NAME + '["~' + MODULE_NAME + '"]';
-  _body = '' +
+  _body = _import + '.__init__();' +
      'export const dirname=' + _import + '.dirname;' +
      'export const basename=' + _import + '.basename;' +
      'export const extname=' + _import + '.extname;' +
@@ -299,7 +299,7 @@ const
      'export const resolve=' + _import + '.resolve;' +
      'export const relative=' + _import + '.relative;' +
      'export const isAbsolute=' + _import + '.isAbsolute;' +
-     ';';
+     '';
 
 initialization
   // Regist module handler

@@ -403,7 +403,7 @@ end;
 //
 const
   _import = G_VAR_IN_JS_NAME + '["~' + MODULE_NAME + '"]';
-  _body = '' +
+  _body = _import + '.__init__();' +
      'export const UTF8Decode=' + _import + '.UTF8Decode;' +
      'export const UTF8Encode=' + _import + '.UTF8Encode;' +
      'export const SetCodePage=' + _import + '.SetCodePage;' +
@@ -412,7 +412,7 @@ const
      'export const formatPas=' + _import + '.formatPas;' +
      'export const unescapeHtmlSync=' + _import + '.unescapeHtmlSync;' +
      'export const unescapeHtml=' + _import + '.unescapeHtml;' +
-     ';';
+     '';
 
 initialization
   // Regist module handler
