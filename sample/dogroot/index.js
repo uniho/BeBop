@@ -1,15 +1,19 @@
+import {screen, mainform, browser} from '/~/bebop'
 
 export const main = async props => {
 
-  const {screen, mainform, browser} = await require('bebop')
+  mainform.caption = 'DEMO デモですよ'
 
   const w = 800
   const h = 600
-  mainform.left = (await screen.workAreaWidth - w) / 2
-  mainform.top = (await screen.workAreaHeight - h) / 2
-  mainform.width = w
-  mainform.height = h
-  mainform.caption = 'DEMO デモですよ'
+  // mainform.left = (await screen.workAreaWidth - w) / 2
+  // mainform.top = (await screen.workAreaHeight - h) / 2
+  // mainform.width = w
+  // mainform.height = h
+  await mainform.setBounds(
+    (await screen.workAreaWidth - w) / 2, (await screen.workAreaHeight - h) / 2,
+    w, h
+  )
 
   if (__argv.indexOf('-autostart') >= 0) {
     location.href = 'download.html'

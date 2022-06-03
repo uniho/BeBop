@@ -53,8 +53,8 @@
     };
   }
 
-  const fs = await require('fs')
-  const util = await require('util')
+  const fs = await import('/~/fs')
+  const util = await import('/~/util')
 
   //
   const testReadWriteFileResource = wrapPromise((async() => {

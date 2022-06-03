@@ -47,6 +47,78 @@ type
   end;
 
 //
+function importCreate(const name: string): ICefv8Value;
+var
+  v1, v2: ICefv8Value;
+  handler: ICefv8Handler;
+  acr: ICefV8Accessor;
+begin
+  //g:= TCefv8ContextRef.Current.GetGlobal;
+  //gvar:= g.GetValueByKey(G_VAR_IN_JS_NAME);
+  //if gvar.HasValueByKey(UTF8Decode(name)) then Exit;
+
+  v2:= TCefv8ValueRef.NewObject(nil, nil);
+
+  handler:= TV8HandlerSafe.Create(name, 'app.showMessage');
+  v1:= TCefv8ValueRef.NewObject(nil, nil);
+  v1.SetValueByKey('showMessage',
+   TCefv8ValueRef.NewFunction('showMessage', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+  handler:= TV8HandlerSafe.Create(name, 'app.terminate');
+  v1.SetValueByKey('terminate',
+   TCefv8ValueRef.NewFunction('terminate', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+  v2.SetValueByKey('app', v1, V8_PROPERTY_ATTRIBUTE_NONE);
+
+  acr:= TV8AccessorScreen.Create;
+  v1:= TCefv8ValueRef.NewObject(acr, nil);
+  v1.SetValueByAccessor('workAreaWidth', V8_ACCESS_CONTROL_DEFAULT, V8_PROPERTY_ATTRIBUTE_NONE);
+  v1.SetValueByAccessor('workAreaHeight', V8_ACCESS_CONTROL_DEFAULT, V8_PROPERTY_ATTRIBUTE_NONE);
+  v2.SetValueByKey('screen', v1, V8_PROPERTY_ATTRIBUTE_NONE);
+
+  acr:= TV8AccessorMainform.Create;
+  v1:= TCefv8ValueRef.NewObject(acr, nil);
+  v1.SetValueByAccessor('left', V8_ACCESS_CONTROL_DEFAULT, V8_PROPERTY_ATTRIBUTE_NONE);
+  v1.SetValueByAccessor('top', V8_ACCESS_CONTROL_DEFAULT, V8_PROPERTY_ATTRIBUTE_NONE);
+  v1.SetValueByAccessor('width', V8_ACCESS_CONTROL_DEFAULT, V8_PROPERTY_ATTRIBUTE_NONE);
+  v1.SetValueByAccessor('height', V8_ACCESS_CONTROL_DEFAULT, V8_PROPERTY_ATTRIBUTE_NONE);
+  v1.SetValueByAccessor('caption', V8_ACCESS_CONTROL_DEFAULT, V8_PROPERTY_ATTRIBUTE_NONE);
+  v1.SetValueByAccessor('visible', V8_ACCESS_CONTROL_DEFAULT, V8_PROPERTY_ATTRIBUTE_NONE);
+  v1.SetValueByAccessor('set', V8_ACCESS_CONTROL_DEFAULT, V8_PROPERTY_ATTRIBUTE_NONE);
+  handler:= TV8HandlerSafe.Create(name, 'mainform.show');
+  v1.SetValueByKey('show',
+   TCefv8ValueRef.NewFunction('show', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+  handler:= TV8HandlerSafe.Create(name, 'mainform.hide');
+  v1.SetValueByKey('hide',
+   TCefv8ValueRef.NewFunction('hide', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+  handler:= TV8HandlerSafe.Create(name, 'mainform.setBounds');
+  v1.SetValueByKey('setBounds',
+   TCefv8ValueRef.NewFunction('setBounds', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+  //handler:= TV8HandlerSafe.Create(name, 'mainform.close');
+  //v1.SetValueByKey('close',
+  // TCefv8ValueRef.NewFunction('close', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+  v2.SetValueByKey('mainform', v1, V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(name, 'browser.reload');
+  v1:= TCefv8ValueRef.NewObject(nil, nil);
+  v1.SetValueByKey('reload',
+   TCefv8ValueRef.NewFunction('reload', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+  handler:= TV8HandlerSafe.Create(name, 'browser.showDevTools');
+  v1.SetValueByKey('showDevTools',
+   TCefv8ValueRef.NewFunction('showDevTools', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+  handler:= TV8HandlerSafe.Create(name, 'browser.loadURL');
+  v1.SetValueByKey('loadURL',
+   TCefv8ValueRef.NewFunction('loadURL', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+  handler:= TV8HandlerSafe.Create(name, 'browser.goBack');
+  v1.SetValueByKey('goBack',
+   TCefv8ValueRef.NewFunction('goBack', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+  handler:= TV8HandlerSafe.Create(name, 'browser.goForward');
+  v1.SetValueByKey('goForward',
+   TCefv8ValueRef.NewFunction('goForward', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+  v2.SetValueByKey('browser', v1, V8_PROPERTY_ATTRIBUTE_NONE);
+
+  Result:= v2;
+end;
+
+//
 function requireCreate(const name: ustring; const obj: ICefv8Value;
   const arguments: TCefv8ValueArray; var retval: ICefv8Value;
   var exception: ustring): Boolean;
@@ -354,6 +426,15 @@ type
     procedure ExecuteAct; override;
   end;
 
+  { TMainformSetBoundsThread }
+
+  TMainformSetBoundsThread = class(TPromiseThread)
+  private
+    procedure doUnSafe;
+  protected
+    procedure ExecuteAct; override;
+  end;
+
   { TMainformShowThread }
 
   TMainformShowThread = class(TPromiseThread)
@@ -400,9 +481,9 @@ begin
     'mainform.set.height',
     'mainform.set.caption',
     'mainform.set.visible',
+    'mainform.setBounds',
     'mainform.show',
-    'mainform.hide',
-    'mainform.close': begin
+    'mainform.hide': begin
       // res = (arg, ...) => new Promise(resolve => {...})
       retval:= NewV8Promise(name,
        TV8HandlerCallback.Create(handler.ModuleName, handler.FuncName, arguments, obj));
@@ -483,6 +564,9 @@ begin
     end;
     'mainform.set.visible': begin
       StartPromiseThread(TMainFormSetVisibleThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
+    end;
+    'mainform.setBounds': begin
+      StartPromiseThread(TMainFormSetBoundsThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
     end;
     'mainform.show': begin
       StartPromiseThread(TMainFormShowThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
@@ -603,6 +687,38 @@ begin
 end;
 
 procedure TBrowserGoForwardThread.ExecuteAct;
+begin
+  Synchronize(@doUnSafe);
+end;
+
+{ TMainformSetBoundsThread }
+
+procedure TMainformSetBoundsThread.doUnSafe;
+var
+  l, t, w, h: integer;
+begin
+  l:= Form1.Left;
+  if (Args.GetSize > 0) and (Args.GetType(0) = VTYPE_INT) then begin
+    l:= Args.GetInt(0);
+  end;
+  t:= Form1.Top;
+  if (Args.GetSize > 1) and (Args.GetType(1) = VTYPE_INT) then begin
+    t:= Args.GetInt(1);
+  end;
+  w:= Form1.Width;
+  if (Args.GetSize > 2) and (Args.GetType(2) = VTYPE_INT) then begin
+    w:= Args.GetInt(2);
+  end;
+  h:= Form1.Height;
+  if (Args.GetSize > 3) and (Args.GetType(3) = VTYPE_INT) then begin
+    h:= Args.GetInt(3);
+  end;
+  Form1.SetBounds(l, t, w, h);
+  CefResolve:= TCefValueRef.New;
+  CefResolve.SetBool(true);
+end;
+
+procedure TMainformSetBoundsThread.ExecuteAct;
 begin
   Synchronize(@doUnSafe);
 end;
@@ -931,9 +1047,61 @@ begin
   Result.PostData:= p;
 end;
 
+//
+const
+  _import = G_VAR_IN_JS_NAME + '["~' + MODULE_NAME + '"]';
+  _body = '' +
+     'export const app={};' +
+       'app.showMessage=' + _import + '.app.showMessage;' +
+       'app.terminate=' + _import + '.app.terminate;' +
+
+     'export const screen={' +
+       'get workAreaWidth(){' +
+         'return ' + _import + '.screen.workAreaWidth},' +
+       'get workAreaHeight(){' +
+         'return ' + _import + '.screen.workAreaHeight},' +
+     '};' +
+
+     'export const mainform={' +
+       'get left(){' +
+         'return ' + _import + '.mainform.left},' +
+       'set left(arg){' +
+         _import + '.mainform.left=arg},' +
+       'get top(){' +
+         'return ' + _import + '.mainform.top},' +
+       'set top(arg){' +
+         _import + '.mainform.top=arg},' +
+       'get width(){' +
+         'return ' + _import + '.mainform.width},' +
+       'set width(arg){' +
+         _import + '.mainform.width=arg},' +
+       'get height(){' +
+         'return ' + _import + '.mainform.height},' +
+       'set height(arg){' +
+         _import + '.mainform.height=arg},' +
+       'get caption(){' +
+         'return ' + _import + '.mainform.caption},' +
+       'set caption(arg){' +
+         _import + '.mainform.caption=arg},' +
+       'get visible(){' +
+         'return ' + _import + '.mainform.visible},' +
+       'set visible(arg){' +
+         _import + '.mainform.visible=arg},' +
+     '};' +
+     'mainform.setBounds=' + _import + '.mainform.setBounds;' +
+     'mainform.show=' + _import + '.mainform.show;' +
+     'mainform.hide=' + _import + '.mainform.hide;' +
+
+     'export const browser={};' +
+       'browser.reload=' + _import + '.browser.reload;' +
+       'browser.showDevTools=' + _import + '.browser.showDevTools;' +
+
+     ';';
+
 initialization
   // Regist module handler
   AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute);
+  AddModuleHandler('~'+MODULE_NAME, _body, @importCreate, @safeExecute);
 
   // Regist TPromiseThread class
   AddPromiseThreadClass(MODULE_NAME, TRequireThread);
@@ -960,5 +1128,13 @@ initialization
   AddPromiseThreadClass(MODULE_NAME, TMainFormSetVisibleThread);
   AddPromiseThreadClass(MODULE_NAME, TMainformShowThread);
   AddPromiseThreadClass(MODULE_NAME, TMainformHideThread);
+
+  AddPromiseThreadClass('~'+MODULE_NAME, TAppShowMessageThread);
+  AddPromiseThreadClass('~'+MODULE_NAME, TAppTerminateThread);
+  AddPromiseThreadClass('~'+MODULE_NAME, TBrowserReloadThread);
+  AddPromiseThreadClass('~'+MODULE_NAME, TBrowserShowDevToolsThread);
+  AddPromiseThreadClass('~'+MODULE_NAME, TMainformSetBoundsThread);
+  AddPromiseThreadClass('~'+MODULE_NAME, TMainformShowThread);
+  AddPromiseThreadClass('~'+MODULE_NAME, TMainformHideThread);
 end.
 

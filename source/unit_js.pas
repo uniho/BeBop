@@ -30,6 +30,8 @@ type
     property CefLocal: ICefv8Value read FLocal;
   end;
 
+  TImportCreate = function(const name: string): ICefv8Value;
+
   TRequireFunction = function(const name: ustring; const obj: ICefv8Value;
     const arguments: TCefv8ValueArray; var retval: ICefv8Value;
     var exception: ustring): Boolean;
@@ -40,7 +42,9 @@ type
   TModuleHandlers = class
   public
     requireCreate, requireExecute: TRequireFunction;
-    safeExecute: TSafeExecute
+    safeExecute: TSafeExecute;
+    creater: TImportCreate;
+    body: string;
   end;
 
   { TTaskResult }
@@ -78,6 +82,7 @@ procedure ContextReleasedEvent(const browser: ICefBrowser; const frame: ICefFram
 procedure ProcessMessageReceivedEvent(const browser: ICefBrowser; const frame: ICefFrame; sourceProcess: TCefProcessId; const message: ICefProcessMessage; var aHandled : boolean);
 
 procedure AddModuleHandler(const name: string; requireCreate, requireExecute: TRequireFunction; safeExecute: TSafeExecute);
+procedure AddModuleHandler(const name, body: string; creater: TImportCreate; safeExecute: TSafeExecute);
 function AddObjectList(obj: TObject): string;
 procedure AddObjectListUUID(const uuid: string; obj: TObject);
 function GetObjectList(const uuid: string): TObject;
@@ -94,6 +99,7 @@ procedure NewFunction(const code: string; args: ICefListValue = nil; const uid: 
 function NewFunctionV8(const code: string; args: TCefv8ValueArray): ICefv8Value;
 function NewUserObject(obj: TObject): ICefDictionaryValue;
 function NewUserObjectV8(obj: TObject): ICefv8Value;
+procedure showWarning(const msg: string);
 
 procedure FreeMemProc(buffer: Pointer);
 
@@ -257,6 +263,7 @@ var
   us, us2: ustring;
   sl: TStringList;
   i, len: integer;
+  handler: TModuleHandlers;
 begin
   aHandled:= True;
   context:= frame.GetV8Context;
@@ -341,11 +348,26 @@ begin
         context.Exit;
       end;
     end;
+    'import': begin
+      context.Enter;
+      try
+        us:= message.ArgumentList.GetString(0);
+        g:= TCefv8ContextRef.Current.GetGlobal.GetValueByKey(G_VAR_IN_JS_NAME);
+        if not g.HasValueByKey(us) then begin
+          i:= ModuleHandlerList.IndexOf(UTF8Encode(us));
+          handler:= TModuleHandlers(ModuleHandlerList.Objects[i]);
+          v1:= handler.creater(UTF8Encode(us));
+          g.SetValueByKey(us, v1, V8_PROPERTY_ATTRIBUTE_NONE);
+        end;
+      finally
+        context.Exit;
+      end;
+    end;
   end;
 end;
 
-procedure AddModuleHandler(const name: string; requireCreate, requireExecute: TRequireFunction;
-  safeExecute: TSafeExecute);
+procedure AddModuleHandler(const name: string;
+  requireCreate, requireExecute: TRequireFunction; safeExecute: TSafeExecute);
 var
   handlers: TModuleHandlers;
 begin
@@ -359,6 +381,25 @@ begin
   handlers.requireExecute:= requireExecute;
   handlers.safeExecute:= safeExecute;
   ModuleHandlerList.AddObject(name, handlers);
+end;
+
+procedure AddModuleHandler(const name, body: string;
+  creater: TImportCreate; safeExecute: TSafeExecute);
+var
+  handler: TModuleHandlers;
+begin
+  if not Assigned(ModuleHandlerList) then begin
+    ModuleHandlerList:= TStringList.Create;
+    ModuleHandlerList.Sorted:= True;
+    ModuleHandlerList.OwnsObjects:= True;
+  end;
+  handler:= TModuleHandlers.Create;
+  handler.requireCreate:= nil;
+  handler.requireExecute:= nil;
+  handler.safeExecute:= safeExecute;
+  handler.creater:= creater;
+  handler.body:= body;
+  ModuleHandlerList.AddObject(name, handler);
 end;
 
 type
@@ -492,6 +533,16 @@ begin
   Result:= '"' + Result + '"';
 end;
 
+procedure showWarning(const msg: string);
+var
+  v1, v2, g: ICefv8Value;
+begin
+  g:= TCefv8ContextRef.Current.GetGlobal;
+  v1:= g.GetValueByKey('console');
+  v2:= v1.GetValueByKey('warn');
+  v2.ExecuteFunction(v1, [TCefv8ValueRef.NewString(UTF8Decode(msg))]);
+end;
+
 { TV8HandlerGlobal }
 
 function TV8HandlerGlobal.Execute(const name: ustring; const obj: ICefv8Value;
@@ -501,19 +552,11 @@ function TV8HandlerGlobal.Execute(const name: ustring; const obj: ICefv8Value;
   //
   function requireSync: boolean;
   var
-    v1, v2, g: ICefv8Value;
     us: ustring;
     i: integer;
     handlers: TModuleHandlers;
   begin
     Result:= True;
-
-    // Show warning
-    g:= TCefv8ContextRef.Current.GetGlobal;
-    v1:= g.GetValueByKey('console');
-    v2:= v1.GetValueByKey('warn');
-    v2.ExecuteFunction(v1, [TCefv8ValueRef.NewString('requireSync() has been deprecated. Please use require() with top-level await instead.')]);
-
     if Length(arguments) > 0 then begin
       us:= arguments[0].GetStringValue;
       i:= ModuleHandlerList.IndexOf(UTF8Encode(us));
@@ -537,6 +580,7 @@ begin
   Result:= False;
   case name of
     'require': begin
+      showWarning('require() has been deprecated. Please use import().');
       if Length(arguments) > 0 then begin
         us:= arguments[0].GetStringValue;
         i:= ModuleHandlerList.IndexOf(UTF8Encode(us));
@@ -550,8 +594,10 @@ begin
       end;
     end;
 
-    'requireSync':
+    'requireSync': begin
+      showWarning('requireSync() has been deprecated. Please use import.');
       Result:= requireSync;
+    end;
   end;
   Result:= True;
 end;

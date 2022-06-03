@@ -72,7 +72,7 @@ uses
 {$ENDIF}
   LCLIntf, variants, LCLType, LazFileUtils,
   uCEFConstants, uCEFApplication, uCEFResourceHandler, uCEFWorkScheduler,
-  uCEFMiscFunctions,
+  uCEFMiscFunctions, uCEFProcessMessage,
   unit_js, unit_global, unit_thread, unit_rest;
 
 {$R *.lfm}
@@ -612,7 +612,7 @@ type
     FStatusText: string;
     FFileName: string;
     FStream: TStream;
-    isREST: boolean;
+    isREST, isModule: boolean;
   protected
     function  open(const request: ICefRequest; var handle_request: boolean; const callback: ICefCallback): boolean; override;
     function  skip(bytes_to_skip: int64; var bytes_skipped: Int64; const callback: ICefResourceSkipCallback): boolean; override;
@@ -627,7 +627,9 @@ function TCustomResourceHandler.open(const request: ICefRequest;
   var handle_request: boolean; const callback: ICefCallback): boolean;
 var
   body: string;
-  p: integer;
+  i, p: integer;
+  handler: TModuleHandlers;
+  msg: ICefProcessMessage;
 begin
   FFileName:= UTF8Encode(request.Url);
   FFileName:= normalizeResourceName(FFileName);
@@ -643,6 +645,31 @@ begin
         if Assigned(callback) then callback.Cont;
         Result:= True;
       end;
+    except
+      FStatus:= 404; // HTTP_NOTFOUND
+      FStatusText:= 'Not Found';
+    end;
+    Exit;
+  end;
+
+  if (Pos('~/', FFileName) = 1) or (Pos('/~/', FFileName) > 0) then begin
+    isModule:= True;
+    FFileName:= '~' + ExtractFileName(FFileName); //
+    Result:= False;
+    try
+      i:= ModuleHandlerList.IndexOf(FFileName);
+      if i < 0 then Raise Exception.Create('');
+      handler:= TModuleHandlers(ModuleHandlerList.Objects[i]);
+      if handler.body = '' then Raise Exception.Create('');
+
+      msg:= TCefProcessMessageRef.New('import');
+      msg.ArgumentList.SetString(0, UTF8Decode(FFileName));
+      Form1.Chromium.SendProcessMessage(PID_RENDERER, msg);
+
+      FStream:= TStringStream.Create(handler.body);
+      //FStream:= TStringStream.Create('');
+      if Assigned(callback) then callback.Cont;
+      Result:= True;
     except
       FStatus:= 404; // HTTP_NOTFOUND
       FStatusText:= 'Not Found';
@@ -704,6 +731,8 @@ begin
 
     if isREST then begin
       response.MimeType:= 'application/json';
+    end else if isModule then begin
+      response.MimeType:= CefGetMimeType(UTF8Decode('js'));
     end else begin
       ext:= ExtractFileExt(FFileName);
       if ext = '' then ext:= '.html';

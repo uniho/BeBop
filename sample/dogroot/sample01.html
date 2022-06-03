@@ -66,10 +66,7 @@
     };
   }
 
-  // Unlike the NodeJS, require() return a type of Promise.
-  // If you want a synchronous processing, you can use Top-level await (https://github.com/tc39/proposal-top-level-await).
-  // But don't forget synchronous methods will often block UI.
-  const bebop = await require('bebop')
+  const bebop = await import('/~/bebop')
 
   const Tools = props => {
 
@@ -89,8 +86,8 @@
 
   //
   const readFileResource = wrapPromise((async() => {
-    const fs = await require('fs')
-    const util = await require('util')
+    const fs = await import('/~/fs')
+    const util = await import('/~/util')
   
     let buf = await fs.readFile('index.js', {codePage: 0})
     let text = util.UTF8Decode(buf)
@@ -119,7 +116,7 @@
 
   //
   const readDirResource = wrapPromise((async() => {
-    const fs = await require('fs')
+    const fs = await import('/~/fs')
     return await fs.readdir('')
   })())
 

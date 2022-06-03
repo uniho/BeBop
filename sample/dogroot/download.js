@@ -2,6 +2,7 @@
 // Emotion is a performant and flexible CSS-in-JS library. 
 // https://github.com/emotion-js/emotion
 import {css, injectGlobal} from 'https://cdn.skypack.dev/@emotion/css?min'
+import * as process from "/~/process"
 
 const targetURI = 
   // 'https://www.youtube.com/watch?v=XVYqWcbPAUk'
@@ -9,8 +10,6 @@ const targetURI =
 
 const autoStart = __argv.indexOf('-autostart') >= 0
 let autoClose = autoStart
-
-const process = await require("process")
 
 //
 export default props => {
@@ -68,7 +67,7 @@ export default props => {
       setStateDownLoading(false)
       setStateCanceling(false)
       if (autoClose) {
-        const bebop = await require('bebop')
+        const bebop = await import('/~/bebop')
         bebop.app.terminate()
       }
     }  
@@ -163,11 +162,10 @@ const download = async (uri, index, updateFunc, checkAbortFunc, windowsHide) => 
 
   const res = await fetch(uri)
 
-  // Unlike the NodeJS, require() return a type of Promise.
-  const fs = await require("fs")
-  const path = await require("path")
-  const {execFile} = await require("child_process")
-  const util = await require("util")
+  const fs = await import("/~/fs")
+  const path = await import("/~/path")
+  const {execFile} = await import("/~/child_process")
+  const util = await import("/~/util")
   
   if (res.ok) {
     const text = await res.text()
@@ -260,8 +258,8 @@ const checkFFMPEG = async() => {
     return 'ffmpeg' 
   }
 
-  const path = await require("path")
-  const fs = await require("fs")
+  const path = await import("/~/path")
+  const fs = await import("/~/fs")
 
   const ffmpeg = path.join(__execPath, 'ffmpeg.exe')
 
@@ -273,7 +271,7 @@ const checkFFMPEG = async() => {
     return ffmpeg
   }
     
-  const {app} = await require("bebop")
+  const {app} = await import("/~/bebop")
   app.showMessage(`You have to put ${path.basename(ffmpeg)} in "${path.dirname(ffmpeg)}" folder.`)
   return false
 }

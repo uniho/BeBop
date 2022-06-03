@@ -28,6 +28,42 @@ type
   end;
 
 //
+function importCreate(const name: string): ICefv8Value;
+var
+  handler: ICefv8Handler;
+begin
+  Result:= TCefv8ValueRef.NewObject(nil, nil);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'dirname');
+  Result.SetValueByKey('dirname',
+   TCefv8ValueRef.NewFunction('dirname', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'basename');
+  Result.SetValueByKey('basename',
+   TCefv8ValueRef.NewFunction('basename', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'extname');
+  Result.SetValueByKey('extname',
+   TCefv8ValueRef.NewFunction('extname', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'join');
+  Result.SetValueByKey('join',
+   TCefv8ValueRef.NewFunction('join', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'resolve');
+  Result.SetValueByKey('resolve',
+   TCefv8ValueRef.NewFunction('resolve', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'relative');
+  Result.SetValueByKey('relative',
+   TCefv8ValueRef.NewFunction('relative', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'isAbsolute');
+  Result.SetValueByKey('isAbsolute',
+   TCefv8ValueRef.NewFunction('isAbsolute', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+end;
+
+//
 function requireCreate(const name: ustring; const obj: ICefv8Value;
   const arguments: TCefv8ValueArray; var retval: ICefv8Value;
   var exception: ustring): Boolean;
@@ -252,9 +288,23 @@ begin
   Result:= True;
 end;
 
+//
+const
+  _import = G_VAR_IN_JS_NAME + '["~' + MODULE_NAME + '"]';
+  _body = '' +
+     'export const dirname=' + _import + '.dirname;' +
+     'export const basename=' + _import + '.basename;' +
+     'export const extname=' + _import + '.extname;' +
+     'export const join=' + _import + '.join;' +
+     'export const resolve=' + _import + '.resolve;' +
+     'export const relative=' + _import + '.relative;' +
+     'export const isAbsolute=' + _import + '.isAbsolute;' +
+     ';';
+
 initialization
   // Regist module handler
   AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute);
+  AddModuleHandler('~'+MODULE_NAME, _body, @importCreate, @safeExecute);
 
   // Regist TPromiseThread class
   AddPromiseThreadClass(MODULE_NAME, TRequireThread);
