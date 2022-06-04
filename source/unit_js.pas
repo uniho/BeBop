@@ -148,7 +148,7 @@ var
   msg: ICefProcessMessage;
   us: ustring;
   i, len: integer;
-  v1, v2, g: ICefv8Value;
+  v1, v2: ICefv8Value;
   handler: TModuleHandlers;
 begin
   context.Global.SetValueByKey('require',
@@ -159,18 +159,17 @@ begin
 
   // window.G_VAR_IN_JS_NAME = {};
   v1:= TCefv8ValueRef.NewObject(nil, nil);
-  context.Global.SetValueByKey(UTF8Decode(G_VAR_IN_JS_NAME), v1, V8_PROPERTY_ATTRIBUTE_NONE);
+  context.Global.SetValueByKey(G_VAR_IN_JS_NAME, v1, V8_PROPERTY_ATTRIBUTE_NONE);
 
   len:= ModuleHandlerList.Count;
   for i:= 0 to len-1 do begin
     handler:= TModuleHandlers(ModuleHandlerList.Objects[i]);
     if Assigned(handler.creater) then begin
       us:= UTF8Decode(ModuleHandlerList[i]);
-      g:= context.Global.GetValueByKey(G_VAR_IN_JS_NAME);
       v2:= TCefv8ValueRef.NewObject(nil, nil);
       v2.SetValueByKey('__init__',
        TCefv8ValueRef.NewFunction(us, TV8HandlerInitImport.Create), V8_PROPERTY_ATTRIBUTE_NONE);
-      g.SetValueByKey(us, v2, V8_PROPERTY_ATTRIBUTE_NONE);
+      v1.SetValueByKey(us, v2, V8_PROPERTY_ATTRIBUTE_NONE);
     end;
   end;
 
