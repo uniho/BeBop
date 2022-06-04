@@ -40,6 +40,7 @@ type
 
   { TRequireThread }
 
+  // DEPRECATED
   TRequireThread = class(TPromiseThread)
   protected
     procedure ExecuteAct; override;

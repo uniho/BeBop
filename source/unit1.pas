@@ -169,6 +169,7 @@ procedure TForm1.FormCreate(Sender: TObject);
   procedure LoadFromConfigFile(const filename: string);
   const
     dogrootDefault = 'dogroot';
+    modrootDefault = '~';
     restrootDefault = '~rest';
   var
     s, s0, dogrootBase: string;
@@ -179,6 +180,7 @@ procedure TForm1.FormCreate(Sender: TObject);
     try
       dogrootBase:= ExtractFilePath(filename);
       unit_global.dogroot:= IncludeTrailingPathDelimiter(CreateAbsolutePath(dogrootDefault, dogrootBase));
+      unit_global.modroot:= modrootDefault;
       unit_global.restroot:= restrootDefault;
       {$IF Defined(WINDOWS)}
       GlobalCEFApp.UserAgent:= UTF8Decode(GetDefaultCEFUserAgent);
@@ -191,6 +193,11 @@ procedure TForm1.FormCreate(Sender: TObject);
       if i >= 0 then begin
         sl.GetNameValue(i, s0, s);
         unit_global.dogroot:= IncludeTrailingPathDelimiter(CreateAbsolutePath(s, dogrootBase));
+      end;
+
+      i:= sl.IndexOfName('modroot');
+      if i >= 0 then begin
+        sl.GetNameValue(i, s0, unit_global.modroot);
       end;
 
       i:= sl.IndexOfName('restroot');
@@ -633,7 +640,7 @@ begin
   FFileName:= UTF8Encode(request.Url);
   FFileName:= normalizeResourceName(FFileName);
 
-  if Pos(restroot + '/', FFileName) = 1 then begin
+  if Pos(unit_global.restroot + '/', FFileName) = 1 then begin
     isREST:= True;
     FFileName:= Copy(FFileName, 7, Length(FFileName));
     Result:= False;
@@ -651,7 +658,8 @@ begin
     Exit;
   end;
 
-  if (Pos('~/', FFileName) = 1) or (Pos('/~/', FFileName) > 0) then begin
+  if (Pos(unit_global.modroot + '/', FFileName) = 1) or
+   (Pos('/' + unit_global.modroot + '/' + ExtractFileName(FFileName), FFileName) > 0) then begin
     isModule:= True;
     FFileName:= ExtractFileName(FFileName);
     Result:= False;
