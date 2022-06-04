@@ -633,7 +633,7 @@ type
 function TCustomResourceHandler.open(const request: ICefRequest;
   var handle_request: boolean; const callback: ICefCallback): boolean;
 var
-  body: string;
+  s: string;
   i, p: integer;
   handler: TModuleHandlers;
 begin
@@ -645,9 +645,9 @@ begin
     FFileName:= Copy(FFileName, 7, Length(FFileName));
     Result:= False;
     try
-      body:= GetFromRestApi(FFileName, request, FStatus, FStatusText);
+      s:= GetFromRestApi(FFileName, request, FStatus, FStatusText);
       if (FStatus >= 200) and (FStatus <= 299) then begin
-        FStream:= TStringStream.Create(body);
+        FStream:= TStringStream.Create(s);
         if Assigned(callback) then callback.Cont;
         Result:= True;
       end;
@@ -658,13 +658,18 @@ begin
     Exit;
   end;
 
-  if (Pos(unit_global.modroot + '/', FFileName) = 1) or
-   (Pos('/' + unit_global.modroot + '/' + ExtractFileName(FFileName), FFileName) > 0) then begin
+  s:= '';
+  if Pos(unit_global.modroot + '/', FFileName) = 1 then begin
+    s:= Copy(FFileName, Length(unit_global.modroot + '/')+1, Length(FFileName));
+  end else begin
+    p:= Pos('/' + unit_global.modroot + '/', FFileName);
+    if p > 0 then s:= Copy(FFileName, Length('/' + unit_global.modroot + '/')+p, Length(FFileName));
+  end;
+  if s <> '' then begin
     isModule:= True;
-    FFileName:= ExtractFileName(FFileName);
     Result:= False;
     try
-      i:= ModuleHandlerList.IndexOf(FFileName);
+      i:= ModuleHandlerList.IndexOf(s);
       if i < 0 then Raise Exception.Create('');
       handler:= TModuleHandlers(ModuleHandlerList.Objects[i]);
       if handler.body = '' then Raise Exception.Create('');
