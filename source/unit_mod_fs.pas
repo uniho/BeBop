@@ -869,7 +869,7 @@ end;
 
 //
 const
-  _import = G_VAR_IN_JS_NAME + '["~' + MODULE_NAME + '"]';
+  _import = G_VAR_IN_JS_NAME + '["' + MODULE_NAME + '"]';
   _body = _import + '.__init__();' +
      'export const mkdir=' + _import + '.mkdir;' +
      'export const open=' + _import + '.open;' +
@@ -883,11 +883,11 @@ const
 
 initialization
   // Regist module handler
-  AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute);
-  AddModuleHandler('~'+MODULE_NAME, _body, @importCreate, @safeExecute);
+  AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute); // DEPRECATED
+  AddModuleHandler(MODULE_NAME, _body, @importCreate, @safeExecute);
 
   // Regist TPromiseThread class
-  AddPromiseThreadClass(MODULE_NAME, TRequireThread);
+  AddPromiseThreadClass(MODULE_NAME, TRequireThread); // DEPRECATED
   AddPromiseThreadClass(MODULE_NAME, TMkdirThread);
   AddPromiseThreadClass(MODULE_NAME, TCloseThread);
   AddPromiseThreadClass(MODULE_NAME, TOpenThread);
@@ -901,19 +901,5 @@ initialization
   AddPromiseThreadClass(MODULE_NAME, TStatThread);
   AddPromiseThreadClass(MODULE_NAME, TWriteThread);
   AddPromiseThreadClass(MODULE_NAME, TWriteFileThread);
-
-  AddPromiseThreadClass('~'+MODULE_NAME, TMkdirThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TCloseThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TOpenThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TReadThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TReadFileThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TReaddirThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TRenameThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TRmThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TSizeThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TSeekThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TStatThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TWriteThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TWriteFileThread);
 end.
 

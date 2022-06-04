@@ -112,7 +112,7 @@ begin
   Result.SetValueByKey('browser', v1, V8_PROPERTY_ATTRIBUTE_NONE);
 end;
 
-//
+// DEPRECATED
 function requireCreate(const name: ustring; const obj: ICefv8Value;
   const arguments: TCefv8ValueArray; var retval: ICefv8Value;
   var exception: ustring): Boolean;
@@ -189,7 +189,7 @@ begin
 end;
 
 
-//
+// DEPRECATED
 function requireExecute(const name: ustring; const obj: ICefv8Value;
   const arguments: TCefv8ValueArray; var retval: ICefv8Value;
   var exception: ustring): Boolean;
@@ -215,6 +215,7 @@ end;
 
 { TRequireThread }
 
+// DEPRECATED
 procedure TRequireThread.ExecuteAct;
 begin
   // Nothing to do
@@ -1043,7 +1044,7 @@ end;
 
 //
 const
-  _import = G_VAR_IN_JS_NAME + '["~' + MODULE_NAME + '"]';
+  _import = G_VAR_IN_JS_NAME + '["' + MODULE_NAME + '"]';
   _body = _import + '.__init__();' +
      'export const app={};' +
        'app.showMessage=' + _import + '.app.showMessage;' +
@@ -1094,18 +1095,18 @@ const
 
 initialization
   // Regist module handler
-  AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute);
-  AddModuleHandler('~'+MODULE_NAME, _body, @importCreate, @safeExecute);
+  AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute); // DEPRECATED
+  AddModuleHandler(MODULE_NAME, _body, @importCreate, @safeExecute);
 
   // Regist TPromiseThread class
-  AddPromiseThreadClass(MODULE_NAME, TRequireThread);
+  AddPromiseThreadClass(MODULE_NAME, TRequireThread); // DEPRECATED
   AddPromiseThreadClass(MODULE_NAME, TAppShowMessageThread);
   AddPromiseThreadClass(MODULE_NAME, TAppTerminateThread);
   AddPromiseThreadClass(MODULE_NAME, TBrowserReloadThread);
   AddPromiseThreadClass(MODULE_NAME, TBrowserShowDevToolsThread);
-  AddPromiseThreadClass(MODULE_NAME, TBrowserLoadURLThread);
-  AddPromiseThreadClass(MODULE_NAME, TBrowserGoBackThread);
-  AddPromiseThreadClass(MODULE_NAME, TBrowserGoForwardThread);
+  AddPromiseThreadClass(MODULE_NAME, TBrowserLoadURLThread); // DEPRECATED
+  AddPromiseThreadClass(MODULE_NAME, TBrowserGoBackThread); // DEPRECATED
+  AddPromiseThreadClass(MODULE_NAME, TBrowserGoForwardThread); // DEPRECATED
   AddPromiseThreadClass(MODULE_NAME, TScreenGetWorkAreaWidthThread);
   AddPromiseThreadClass(MODULE_NAME, TScreenGetWorkAreaHeightThread);
   AddPromiseThreadClass(MODULE_NAME, TMainFormGetLeftThread);
@@ -1122,13 +1123,6 @@ initialization
   AddPromiseThreadClass(MODULE_NAME, TMainFormSetVisibleThread);
   AddPromiseThreadClass(MODULE_NAME, TMainformShowThread);
   AddPromiseThreadClass(MODULE_NAME, TMainformHideThread);
-
-  AddPromiseThreadClass('~'+MODULE_NAME, TAppShowMessageThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TAppTerminateThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TBrowserReloadThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TBrowserShowDevToolsThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TMainformSetBoundsThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TMainformShowThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TMainformHideThread);
+  AddPromiseThreadClass(MODULE_NAME, TMainformSetBoundsThread);
 end.
 

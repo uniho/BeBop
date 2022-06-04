@@ -290,7 +290,7 @@ end;
 
 //
 const
-  _import = G_VAR_IN_JS_NAME + '["~' + MODULE_NAME + '"]';
+  _import = G_VAR_IN_JS_NAME + '["' + MODULE_NAME + '"]';
   _body = _import + '.__init__();' +
      'export const dirname=' + _import + '.dirname;' +
      'export const basename=' + _import + '.basename;' +
@@ -303,10 +303,10 @@ const
 
 initialization
   // Regist module handler
-  AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute);
-  AddModuleHandler('~'+MODULE_NAME, _body, @importCreate, @safeExecute);
+  AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute); // DEPRECATED
+  AddModuleHandler(MODULE_NAME, _body, @importCreate, @safeExecute);
 
   // Regist TPromiseThread class
-  AddPromiseThreadClass(MODULE_NAME, TRequireThread);
+  AddPromiseThreadClass(MODULE_NAME, TRequireThread); // DEPRECATED
 end.
 

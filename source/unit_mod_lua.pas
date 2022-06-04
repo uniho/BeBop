@@ -251,7 +251,7 @@ begin
    TCefv8ValueRef.NewFunction('run', handler), V8_PROPERTY_ATTRIBUTE_NONE);
 end;
 
-//
+// DEPRECATED
 function requireCreate(const name: ustring; const obj: ICefv8Value;
   const arguments: TCefv8ValueArray; var retval: ICefv8Value;
   var exception: ustring): Boolean;
@@ -266,7 +266,7 @@ begin
   Result:= True;
 end;
 
-//
+// DEPRECATED
 function requireExecute(const name: ustring; const obj: ICefv8Value;
   const arguments: TCefv8ValueArray; var retval: ICefv8Value;
   var exception: ustring): Boolean;
@@ -290,6 +290,7 @@ end;
 
 { TRequireThread }
 
+// DEPRECATED
 procedure TRequireThread.ExecuteAct;
 begin
   // Nothing to do
@@ -375,20 +376,18 @@ end;
 
 //
 const
-  _import = G_VAR_IN_JS_NAME + '["~' + MODULE_NAME + '"]';
+  _import = G_VAR_IN_JS_NAME + '["' + MODULE_NAME + '"]';
   _body = _import + '.__init__();' +
      'export const run=' + _import + '.run;' +
      '';
 
 initialization
   // Regist module handler
-  AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute);
-  AddModuleHandler('~'+MODULE_NAME, _body, @importCreate, @safeExecute);
+  AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute); // DEPRECATED
+  AddModuleHandler(MODULE_NAME, _body, @importCreate, @safeExecute);
 
   // Regist TPromiseThread class
-  AddPromiseThreadClass(MODULE_NAME, TRequireThread);
+  AddPromiseThreadClass(MODULE_NAME, TRequireThread); // DEPRECATED
   AddPromiseThreadClass(MODULE_NAME, TRunThread);
-
-  AddPromiseThreadClass('~'+MODULE_NAME, TRunThread);
 end.
 

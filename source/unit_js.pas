@@ -32,9 +32,11 @@ type
 
   TImportCreate = function(const name: string): ICefv8Value;
 
+  // DEPRECATED
   TRequireFunction = function(const name: ustring; const obj: ICefv8Value;
     const arguments: TCefv8ValueArray; var retval: ICefv8Value;
     var exception: ustring): Boolean;
+
   TSafeExecute = function(const handler: TV8HandlerSafe; const name: ustring;
     const obj: ICefv8Value; const arguments: TCefv8ValueArray;
     var retval: ICefv8Value; var exception: ustring): Boolean;
@@ -118,6 +120,7 @@ type
 
   { TV8HandlerGlobal }
 
+  // DEPRECATED
   TV8HandlerGlobal = class(TCefv8HandlerOwn)
   protected
     function Execute(const name: ustring; const obj: ICefv8Value; const arguments: TCefv8ValueArray; var retval: ICefv8Value; var exception: ustring): Boolean; override;
@@ -125,6 +128,7 @@ type
 
   { TV8HandlerRequire }
 
+  // DEPRECATED
   TV8HandlerRequire = class(TCefv8HandlerOwn)
   protected
     function Execute(const name: ustring; const obj: ICefv8Value; const arguments: TCefv8ValueArray; var retval: ICefv8Value; var exception: ustring): Boolean; override;
@@ -153,9 +157,11 @@ var
 begin
   if browser.IsPopup then Exit;
 
+  // DEPRECATED
   context.Global.SetValueByKey('require',
    TCefv8ValueRef.NewFunction('require', TV8HandlerGlobal.Create), V8_PROPERTY_ATTRIBUTE_NONE);
 
+  // DEPRECATED
   context.Global.SetValueByKey('requireSync',
    TCefv8ValueRef.NewFunction('requireSync', TV8HandlerGlobal.Create), V8_PROPERTY_ATTRIBUTE_NONE);
 
@@ -379,6 +385,7 @@ begin
   end;
 end;
 
+// DEPRECATED
 procedure AddModuleHandler(const name: string;
   requireCreate, requireExecute: TRequireFunction; safeExecute: TSafeExecute);
 var
@@ -399,6 +406,7 @@ end;
 procedure AddModuleHandler(const name, body: string;
   creater: TImportCreate; safeExecute: TSafeExecute);
 var
+  i: integer;
   handler: TModuleHandlers;
 begin
   if not Assigned(ModuleHandlerList) then begin
@@ -406,13 +414,22 @@ begin
     ModuleHandlerList.Sorted:= True;
     ModuleHandlerList.OwnsObjects:= True;
   end;
-  handler:= TModuleHandlers.Create;
-  handler.requireCreate:= nil;
-  handler.requireExecute:= nil;
-  handler.safeExecute:= safeExecute;
-  handler.creater:= creater;
-  handler.body:= body;
-  ModuleHandlerList.AddObject(name, handler);
+  i:= ModuleHandlerList.IndexOf(name);
+  if i < 0 then begin
+    handler:= TModuleHandlers.Create;
+    handler.requireCreate:= nil;
+    handler.requireExecute:= nil;
+    handler.safeExecute:= safeExecute;
+    handler.creater:= creater;
+    handler.body:= body;
+    ModuleHandlerList.AddObject(name, handler);
+  end else begin
+    // It's unnecessary in the future.
+    handler:= TModuleHandlers(ModuleHandlerList.Objects[i]);
+    handler.safeExecute:= safeExecute;
+    handler.creater:= creater;
+    handler.body:= body;
+  end;
 end;
 
 type
@@ -558,6 +575,7 @@ end;
 
 { TV8HandlerGlobal }
 
+// DEPRECATED
 function TV8HandlerGlobal.Execute(const name: ustring; const obj: ICefv8Value;
   const arguments: TCefv8ValueArray; var retval: ICefv8Value;
   var exception: ustring): Boolean;
@@ -617,6 +635,7 @@ end;
 
 { TV8HandlerRequire }
 
+// DEPRECATED
 function TV8HandlerRequire.Execute(const name: ustring; const obj: ICefv8Value;
   const arguments: TCefv8ValueArray; var retval: ICefv8Value;
   var exception: ustring): Boolean;

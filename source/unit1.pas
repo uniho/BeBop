@@ -653,7 +653,7 @@ begin
 
   if (Pos('~/', FFileName) = 1) or (Pos('/~/', FFileName) > 0) then begin
     isModule:= True;
-    FFileName:= '~' + ExtractFileName(FFileName); //
+    FFileName:= ExtractFileName(FFileName);
     Result:= False;
     try
       i:= ModuleHandlerList.IndexOf(FFileName);

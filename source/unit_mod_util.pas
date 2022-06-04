@@ -402,7 +402,7 @@ end;
 
 //
 const
-  _import = G_VAR_IN_JS_NAME + '["~' + MODULE_NAME + '"]';
+  _import = G_VAR_IN_JS_NAME + '["' + MODULE_NAME + '"]';
   _body = _import + '.__init__();' +
      'export const UTF8Decode=' + _import + '.UTF8Decode;' +
      'export const UTF8Encode=' + _import + '.UTF8Encode;' +
@@ -416,13 +416,11 @@ const
 
 initialization
   // Regist module handler
-  AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute);
-  AddModuleHandler('~'+MODULE_NAME, _body, @importCreate, @safeExecute);
+  AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute); // DEPRECATED
+  AddModuleHandler(MODULE_NAME, _body, @importCreate, @safeExecute);
 
   // Regist TPromiseThread class
-  AddPromiseThreadClass(MODULE_NAME, TRequireThread);
+  AddPromiseThreadClass(MODULE_NAME, TRequireThread); // DEPRECATED
   AddPromiseThreadClass(MODULE_NAME, TUnescapeHtmlThread); //
-
-  AddPromiseThreadClass('~'+MODULE_NAME, TUnescapeHtmlThread); //
 end.
 

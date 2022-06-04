@@ -512,26 +512,21 @@ end;
 
 //
 const
-  _import = G_VAR_IN_JS_NAME + '["~' + MODULE_NAME + '"]';
+  _import = G_VAR_IN_JS_NAME + '["' + MODULE_NAME + '"]';
   _body = _import + '.__init__();' +
      'export const execFile=' + _import + '.execFile;' +
      '';
 
 initialization
   // Regist module handler
-  AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute);
-  AddModuleHandler('~'+MODULE_NAME, _body, @importCreate, @safeExecute);
+  AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute); // DEPRECATED
+  AddModuleHandler(MODULE_NAME, _body, @importCreate, @safeExecute);
 
   // Regist TPromiseThread class
-  AddPromiseThreadClass(MODULE_NAME, TRequireThread);
+  AddPromiseThreadClass(MODULE_NAME, TRequireThread); // DEPRECATED
   AddPromiseThreadClass(MODULE_NAME, TExecFileThread);
   AddPromiseThreadClass(MODULE_NAME, TReadThread);
   AddPromiseThreadClass(MODULE_NAME, TCloseThread);
   AddPromiseThreadClass(MODULE_NAME, TIsRunningThread);
-
-  AddPromiseThreadClass('~'+MODULE_NAME, TExecFileThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TReadThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TCloseThread);
-  AddPromiseThreadClass('~'+MODULE_NAME, TIsRunningThread);
 end.
 
