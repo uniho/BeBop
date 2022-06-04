@@ -151,6 +151,8 @@ var
   v1, v2: ICefv8Value;
   handler: TModuleHandlers;
 begin
+  if browser.IsPopup then Exit;
+
   context.Global.SetValueByKey('require',
    TCefv8ValueRef.NewFunction('require', TV8HandlerGlobal.Create), V8_PROPERTY_ATTRIBUTE_NONE);
 
