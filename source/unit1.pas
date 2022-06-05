@@ -738,7 +738,7 @@ begin
     if isREST then begin
       response.MimeType:= 'application/json';
     end else if isModule then begin
-      response.MimeType:= CefGetMimeType(UTF8Decode('js'));
+      response.MimeType:= 'text/javascript'; // RFC 9239
     end else begin
       ext:= ExtractFileExt(FFileName);
       if ext = '' then ext:= '.html';
