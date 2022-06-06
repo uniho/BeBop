@@ -241,6 +241,17 @@ type
   end;
 
 //
+function importCreate(const name: string): ICefv8Value;
+var
+  handler: ICefv8Handler;
+begin
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'run');
+  Result:= TCefv8ValueRef.NewObject(nil, nil);
+  Result.SetValueByKey('run',
+   TCefv8ValueRef.NewFunction('run', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+end;
+
+// DEPRECATED
 function requireCreate(const name: ustring; const obj: ICefv8Value;
   const arguments: TCefv8ValueArray; var retval: ICefv8Value;
   var exception: ustring): Boolean;
@@ -255,7 +266,7 @@ begin
   Result:= True;
 end;
 
-//
+// DEPRECATED
 function requireExecute(const name: ustring; const obj: ICefv8Value;
   const arguments: TCefv8ValueArray; var retval: ICefv8Value;
   var exception: ustring): Boolean;
@@ -279,6 +290,7 @@ end;
 
 { TRequireThread }
 
+// DEPRECATED
 procedure TRequireThread.ExecuteAct;
 begin
   // Nothing to do
@@ -362,12 +374,20 @@ begin
   CefResolve:= llua_run(filename, key, v1);
 end;
 
+//
+const
+  _import = G_VAR_IN_JS_NAME + '["' + MODULE_NAME + '"]';
+  _body = _import + '.__init__();' +
+     'export const run=' + _import + '.run;' +
+     '';
+
 initialization
   // Regist module handler
-  AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute);
+  AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute); // DEPRECATED
+  AddModuleHandler(MODULE_NAME, _body, @importCreate, @safeExecute);
 
   // Regist TPromiseThread class
-  AddPromiseThreadClass(MODULE_NAME, TRequireThread);
+  AddPromiseThreadClass(MODULE_NAME, TRequireThread); // DEPRECATED
   AddPromiseThreadClass(MODULE_NAME, TRunThread);
 end.
 

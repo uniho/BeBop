@@ -30,6 +30,48 @@ type
   end;
 
 //
+function importCreate(const name: string): ICefv8Value;
+var
+  handler: ICefv8Handler;
+begin
+  Result:= TCefv8ValueRef.NewObject(nil, nil);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'UTF8Decode');
+  Result.SetValueByKey('UTF8Decode',
+   TCefv8ValueRef.NewFunction('UTF8Decode', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'UTF8Encode');
+  Result.SetValueByKey('UTF8Encode',
+   TCefv8ValueRef.NewFunction('UTF8Encode', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'SetCodePage');
+  Result.SetValueByKey('SetCodePage',
+   TCefv8ValueRef.NewFunction('SetCodePage', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'GetSystemDefaultLCID');
+  Result.SetValueByKey('GetSystemDefaultLCID',
+   TCefv8ValueRef.NewFunction('GetSystemDefaultLCID', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'CreateUUID');
+  Result.SetValueByKey('CreateUUID',
+   TCefv8ValueRef.NewFunction('CreateUUID', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'formatPas');
+  Result.SetValueByKey('formatPas',
+   TCefv8ValueRef.NewFunction('formatPas', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  // It's just a sample.
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'unescapeHtmlSync');
+  Result.SetValueByKey('unescapeHtmlSync',
+   TCefv8ValueRef.NewFunction('unescapeHtmlSync', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  // It's just a sample.
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'unescapeHtml');
+  Result.SetValueByKey('unescapeHtml',
+   TCefv8ValueRef.NewFunction('unescapeHtml', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+end;
+
+//
 function requireCreate(const name: ustring; const obj: ICefv8Value;
   const arguments: TCefv8ValueArray; var retval: ICefv8Value;
   var exception: ustring): Boolean;
@@ -358,12 +400,27 @@ begin
   ResolveOnTerminate:= false;
 end;
 
+//
+const
+  _import = G_VAR_IN_JS_NAME + '["' + MODULE_NAME + '"]';
+  _body = _import + '.__init__();' +
+     'export const UTF8Decode=' + _import + '.UTF8Decode;' +
+     'export const UTF8Encode=' + _import + '.UTF8Encode;' +
+     'export const SetCodePage=' + _import + '.SetCodePage;' +
+     'export const GetSystemDefaultLCID=' + _import + '.GetSystemDefaultLCID;' +
+     'export const CreateUUID=' + _import + '.CreateUUID;' +
+     'export const formatPas=' + _import + '.formatPas;' +
+     'export const unescapeHtmlSync=' + _import + '.unescapeHtmlSync;' +
+     'export const unescapeHtml=' + _import + '.unescapeHtml;' +
+     '';
+
 initialization
   // Regist module handler
-  AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute);
+  AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute); // DEPRECATED
+  AddModuleHandler(MODULE_NAME, _body, @importCreate, @safeExecute);
 
   // Regist TPromiseThread class
-  AddPromiseThreadClass(MODULE_NAME, TRequireThread);
+  AddPromiseThreadClass(MODULE_NAME, TRequireThread); // DEPRECATED
   AddPromiseThreadClass(MODULE_NAME, TUnescapeHtmlThread); //
 end.
 

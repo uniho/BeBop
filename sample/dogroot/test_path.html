@@ -17,6 +17,8 @@
 
 <script type="module">
 
+  import * as path from '/~/path'
+
   // Emotion is a performant and flexible CSS-in-JS library. 
   // https://github.com/emotion-js/emotion
   import {css, injectGlobal} from 'https://cdn.skypack.dev/@emotion/css?min'
@@ -24,8 +26,6 @@
   // htm is JSX-like syntax in plain JavaScript - no transpiler necessary.
   // https://github.com/developit/htm
   const html = htm.bind(React.createElement)
-
-  const path = await require('path')
 
   //
   const TestDirname = props => {

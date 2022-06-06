@@ -54,7 +54,7 @@
   }
 
   const luaResource = wrapPromise((async() => {
-    const lua = await require('lua')
+    const lua = await import('/~/lua')
     return await lua.run("test.lua", "main", 200, "Hello Lua, お元気ですか？")
   })())
 

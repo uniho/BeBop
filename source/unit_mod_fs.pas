@@ -28,6 +28,46 @@ type
   end;
 
 //
+function importCreate(const name: string): ICefv8Value;
+var
+  handler: ICefv8Handler;
+begin
+  Result:= TCefv8ValueRef.NewObject(nil, nil);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'mkdir');
+  Result.SetValueByKey('mkdir',
+   TCefv8ValueRef.NewFunction('mkdir', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'open');
+  Result.SetValueByKey('open',
+   TCefv8ValueRef.NewFunction('open', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'readdir');
+  Result.SetValueByKey('readdir',
+   TCefv8ValueRef.NewFunction('readdir', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'rename');
+  Result.SetValueByKey('rename',
+   TCefv8ValueRef.NewFunction('rename', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'rm');
+  Result.SetValueByKey('rm',
+   TCefv8ValueRef.NewFunction('rm', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'stat');
+  Result.SetValueByKey('stat',
+   TCefv8ValueRef.NewFunction('stat', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'readFile');
+  Result.SetValueByKey('readFile',
+   TCefv8ValueRef.NewFunction('readFile', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'writeFile');
+  Result.SetValueByKey('writeFile',
+   TCefv8ValueRef.NewFunction('writeFile', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+end;
+
+//
 function requireCreate(const name: ustring; const obj: ICefv8Value;
   const arguments: TCefv8ValueArray; var retval: ICefv8Value;
   var exception: ustring): Boolean;
@@ -827,13 +867,27 @@ begin
   end;
 end;
 
+//
+const
+  _import = G_VAR_IN_JS_NAME + '["' + MODULE_NAME + '"]';
+  _body = _import + '.__init__();' +
+     'export const mkdir=' + _import + '.mkdir;' +
+     'export const open=' + _import + '.open;' +
+     'export const readdir=' + _import + '.readdir;' +
+     'export const rename=' + _import + '.rename;' +
+     'export const rm=' + _import + '.rm;' +
+     'export const stat=' + _import + '.stat;' +
+     'export const readFile=' + _import + '.readFile;' +
+     'export const writeFile=' + _import + '.writeFile;' +
+     '';
 
 initialization
   // Regist module handler
-  AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute);
+  AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute); // DEPRECATED
+  AddModuleHandler(MODULE_NAME, _body, @importCreate, @safeExecute);
 
   // Regist TPromiseThread class
-  AddPromiseThreadClass(MODULE_NAME, TRequireThread);
+  AddPromiseThreadClass(MODULE_NAME, TRequireThread); // DEPRECATED
   AddPromiseThreadClass(MODULE_NAME, TMkdirThread);
   AddPromiseThreadClass(MODULE_NAME, TCloseThread);
   AddPromiseThreadClass(MODULE_NAME, TOpenThread);

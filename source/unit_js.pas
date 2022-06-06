@@ -30,9 +30,13 @@ type
     property CefLocal: ICefv8Value read FLocal;
   end;
 
+  TImportCreate = function(const name: string): ICefv8Value;
+
+  // DEPRECATED
   TRequireFunction = function(const name: ustring; const obj: ICefv8Value;
     const arguments: TCefv8ValueArray; var retval: ICefv8Value;
     var exception: ustring): Boolean;
+
   TSafeExecute = function(const handler: TV8HandlerSafe; const name: ustring;
     const obj: ICefv8Value; const arguments: TCefv8ValueArray;
     var retval: ICefv8Value; var exception: ustring): Boolean;
@@ -40,7 +44,9 @@ type
   TModuleHandlers = class
   public
     requireCreate, requireExecute: TRequireFunction;
-    safeExecute: TSafeExecute
+    safeExecute: TSafeExecute;
+    creater: TImportCreate;
+    body: string;
   end;
 
   { TTaskResult }
@@ -78,6 +84,7 @@ procedure ContextReleasedEvent(const browser: ICefBrowser; const frame: ICefFram
 procedure ProcessMessageReceivedEvent(const browser: ICefBrowser; const frame: ICefFrame; sourceProcess: TCefProcessId; const message: ICefProcessMessage; var aHandled : boolean);
 
 procedure AddModuleHandler(const name: string; requireCreate, requireExecute: TRequireFunction; safeExecute: TSafeExecute);
+procedure AddModuleHandler(const name, body: string; creater: TImportCreate; safeExecute: TSafeExecute);
 function AddObjectList(obj: TObject): string;
 procedure AddObjectListUUID(const uuid: string; obj: TObject);
 function GetObjectList(const uuid: string): TObject;
@@ -94,6 +101,7 @@ procedure NewFunction(const code: string; args: ICefListValue = nil; const uid: 
 function NewFunctionV8(const code: string; args: TCefv8ValueArray): ICefv8Value;
 function NewUserObject(obj: TObject): ICefDictionaryValue;
 function NewUserObjectV8(obj: TObject): ICefv8Value;
+procedure showWarning(const msg: string);
 
 procedure FreeMemProc(buffer: Pointer);
 
@@ -112,6 +120,7 @@ type
 
   { TV8HandlerGlobal }
 
+  // DEPRECATED
   TV8HandlerGlobal = class(TCefv8HandlerOwn)
   protected
     function Execute(const name: ustring; const obj: ICefv8Value; const arguments: TCefv8ValueArray; var retval: ICefv8Value; var exception: ustring): Boolean; override;
@@ -119,7 +128,15 @@ type
 
   { TV8HandlerRequire }
 
+  // DEPRECATED
   TV8HandlerRequire = class(TCefv8HandlerOwn)
+  protected
+    function Execute(const name: ustring; const obj: ICefv8Value; const arguments: TCefv8ValueArray; var retval: ICefv8Value; var exception: ustring): Boolean; override;
+  end;
+
+  { TV8HandlerInitImport }
+
+  TV8HandlerInitImport = class(TCefv8HandlerOwn)
   protected
     function Execute(const name: ustring; const obj: ICefv8Value; const arguments: TCefv8ValueArray; var retval: ICefv8Value; var exception: ustring): Boolean; override;
   end;
@@ -133,12 +150,36 @@ end;
 procedure ContextCreatedEvent(const browser: ICefBrowser; const frame: ICefFrame; const context: ICefv8Context);
 var
   msg: ICefProcessMessage;
+  us: ustring;
+  i, len: integer;
+  v1, v2: ICefv8Value;
+  handler: TModuleHandlers;
 begin
+  if browser.IsPopup then Exit;
+
+  // DEPRECATED
   context.Global.SetValueByKey('require',
    TCefv8ValueRef.NewFunction('require', TV8HandlerGlobal.Create), V8_PROPERTY_ATTRIBUTE_NONE);
 
+  // DEPRECATED
   context.Global.SetValueByKey('requireSync',
    TCefv8ValueRef.NewFunction('requireSync', TV8HandlerGlobal.Create), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  // window.G_VAR_IN_JS_NAME = {};
+  v1:= TCefv8ValueRef.NewObject(nil, nil);
+  context.Global.SetValueByKey(G_VAR_IN_JS_NAME, v1, V8_PROPERTY_ATTRIBUTE_NONE);
+
+  len:= ModuleHandlerList.Count;
+  for i:= 0 to len-1 do begin
+    handler:= TModuleHandlers(ModuleHandlerList.Objects[i]);
+    if Assigned(handler.creater) then begin
+      us:= UTF8Decode(ModuleHandlerList[i]);
+      v2:= TCefv8ValueRef.NewObject(nil, nil);
+      v2.SetValueByKey('__init__',
+       TCefv8ValueRef.NewFunction(us, TV8HandlerInitImport.Create), V8_PROPERTY_ATTRIBUTE_NONE);
+      v1.SetValueByKey(us, v2, V8_PROPERTY_ATTRIBUTE_NONE);
+    end;
+  end;
 
   msg:= TCefProcessMessageRef.New('context_created');
   frame.SendProcessMessage(PID_BROWSER, msg);
@@ -344,8 +385,9 @@ begin
   end;
 end;
 
-procedure AddModuleHandler(const name: string; requireCreate, requireExecute: TRequireFunction;
-  safeExecute: TSafeExecute);
+// DEPRECATED
+procedure AddModuleHandler(const name: string;
+  requireCreate, requireExecute: TRequireFunction; safeExecute: TSafeExecute);
 var
   handlers: TModuleHandlers;
 begin
@@ -359,6 +401,35 @@ begin
   handlers.requireExecute:= requireExecute;
   handlers.safeExecute:= safeExecute;
   ModuleHandlerList.AddObject(name, handlers);
+end;
+
+procedure AddModuleHandler(const name, body: string;
+  creater: TImportCreate; safeExecute: TSafeExecute);
+var
+  i: integer;
+  handler: TModuleHandlers;
+begin
+  if not Assigned(ModuleHandlerList) then begin
+    ModuleHandlerList:= TStringList.Create;
+    ModuleHandlerList.Sorted:= True;
+    ModuleHandlerList.OwnsObjects:= True;
+  end;
+  i:= ModuleHandlerList.IndexOf(name);
+  if i < 0 then begin
+    handler:= TModuleHandlers.Create;
+    handler.requireCreate:= nil;
+    handler.requireExecute:= nil;
+    handler.safeExecute:= safeExecute;
+    handler.creater:= creater;
+    handler.body:= body;
+    ModuleHandlerList.AddObject(name, handler);
+  end else begin
+    // It's unnecessary in the future.
+    handler:= TModuleHandlers(ModuleHandlerList.Objects[i]);
+    handler.safeExecute:= safeExecute;
+    handler.creater:= creater;
+    handler.body:= body;
+  end;
 end;
 
 type
@@ -492,8 +563,19 @@ begin
   Result:= '"' + Result + '"';
 end;
 
+procedure showWarning(const msg: string);
+var
+  v1, v2, g: ICefv8Value;
+begin
+  g:= TCefv8ContextRef.Current.GetGlobal;
+  v1:= g.GetValueByKey('console');
+  v2:= v1.GetValueByKey('warn');
+  v2.ExecuteFunction(v1, [TCefv8ValueRef.NewString(UTF8Decode(msg))]);
+end;
+
 { TV8HandlerGlobal }
 
+// DEPRECATED
 function TV8HandlerGlobal.Execute(const name: ustring; const obj: ICefv8Value;
   const arguments: TCefv8ValueArray; var retval: ICefv8Value;
   var exception: ustring): Boolean;
@@ -501,19 +583,11 @@ function TV8HandlerGlobal.Execute(const name: ustring; const obj: ICefv8Value;
   //
   function requireSync: boolean;
   var
-    v1, v2, g: ICefv8Value;
     us: ustring;
     i: integer;
     handlers: TModuleHandlers;
   begin
     Result:= True;
-
-    // Show warning
-    g:= TCefv8ContextRef.Current.GetGlobal;
-    v1:= g.GetValueByKey('console');
-    v2:= v1.GetValueByKey('warn');
-    v2.ExecuteFunction(v1, [TCefv8ValueRef.NewString('requireSync() has been deprecated. Please use require() with top-level await instead.')]);
-
     if Length(arguments) > 0 then begin
       us:= arguments[0].GetStringValue;
       i:= ModuleHandlerList.IndexOf(UTF8Encode(us));
@@ -537,6 +611,7 @@ begin
   Result:= False;
   case name of
     'require': begin
+      showWarning('require() has been deprecated. Please use import().');
       if Length(arguments) > 0 then begin
         us:= arguments[0].GetStringValue;
         i:= ModuleHandlerList.IndexOf(UTF8Encode(us));
@@ -550,25 +625,48 @@ begin
       end;
     end;
 
-    'requireSync':
+    'requireSync': begin
+      showWarning('requireSync() has been deprecated. Please use import.');
       Result:= requireSync;
+    end;
   end;
   Result:= True;
 end;
 
 { TV8HandlerRequire }
 
+// DEPRECATED
 function TV8HandlerRequire.Execute(const name: ustring; const obj: ICefv8Value;
   const arguments: TCefv8ValueArray; var retval: ICefv8Value;
   var exception: ustring): Boolean;
 var
   i: integer;
-  handlers: TModuleHandlers;
+  handler: TModuleHandlers;
 begin
   Result:= False;
   i:= ModuleHandlerList.IndexOf(UTF8Encode(name));
-  handlers:= TModuleHandlers(ModuleHandlerList.Objects[i]);
-  Result:= handlers.requireExecute(name, obj, arguments, retval, exception);
+  handler:= TModuleHandlers(ModuleHandlerList.Objects[i]);
+  Result:= handler.requireExecute(name, obj, arguments, retval, exception);
+end;
+
+{ TV8HandlerInitImport }
+
+function TV8HandlerInitImport.Execute(const name: ustring;
+  const obj: ICefv8Value; const arguments: TCefv8ValueArray;
+  var retval: ICefv8Value; var exception: ustring): Boolean;
+var
+  s: string;
+  v1, g: ICefv8Value;
+  i: integer;
+  handler: TModuleHandlers;
+begin
+  s:= UTF8Encode(name);
+  i:= ModuleHandlerList.IndexOf(s);
+  handler:= TModuleHandlers(ModuleHandlerList.Objects[i]);
+  v1:= handler.creater(s);
+  g:= TCefv8ContextRef.Current.GetGlobal.GetValueByKey(G_VAR_IN_JS_NAME);
+  g.SetValueByKey(name, v1, V8_PROPERTY_ATTRIBUTE_NONE);
+  Result:= True;
 end;
 
 { TV8HandlerSafe }

@@ -27,10 +27,14 @@ Reload current html file.
 ### `bebop.mainform.hide()`
 * Returns: \<Promise>
 
-### `bebop.mainform.close()`
+### `bebop.mainform.setBounds(left, top, width, height)`
+* `left` \<integr>
+* `top` \<integr>
+* `width` \<integr>
+* `height` \<integr>
 * Returns: \<Promise>
 
-Terminate the application.
+Sets the `left`, `top`, `width`, and `height` properties all at once.
 
 ### `bebop.mainform.left getter`
 * Returns: \<Promise> Fulfills with a \<integer>

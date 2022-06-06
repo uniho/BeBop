@@ -10,7 +10,7 @@ unit Unit1;
 interface
 
 uses
-  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls, LMessages, StdCtrls,
+  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls, StdCtrls,
   uCEFChromium, uCEFLinkedWindowParent, uCEFTypes, uCEFInterfaces;
 
 type
@@ -72,7 +72,7 @@ uses
 {$ENDIF}
   LCLIntf, variants, LCLType, LazFileUtils,
   uCEFConstants, uCEFApplication, uCEFResourceHandler, uCEFWorkScheduler,
-  uCEFMiscFunctions,
+  uCEFMiscFunctions, uCEFProcessMessage,
   unit_js, unit_global, unit_thread, unit_rest;
 
 {$R *.lfm}
@@ -169,6 +169,7 @@ procedure TForm1.FormCreate(Sender: TObject);
   procedure LoadFromConfigFile(const filename: string);
   const
     dogrootDefault = 'dogroot';
+    modrootDefault = '~';
     restrootDefault = '~rest';
   var
     s, s0, dogrootBase: string;
@@ -179,6 +180,7 @@ procedure TForm1.FormCreate(Sender: TObject);
     try
       dogrootBase:= ExtractFilePath(filename);
       unit_global.dogroot:= IncludeTrailingPathDelimiter(CreateAbsolutePath(dogrootDefault, dogrootBase));
+      unit_global.modroot:= modrootDefault;
       unit_global.restroot:= restrootDefault;
       {$IF Defined(WINDOWS)}
       GlobalCEFApp.UserAgent:= UTF8Decode(GetDefaultCEFUserAgent);
@@ -191,6 +193,11 @@ procedure TForm1.FormCreate(Sender: TObject);
       if i >= 0 then begin
         sl.GetNameValue(i, s0, s);
         unit_global.dogroot:= IncludeTrailingPathDelimiter(CreateAbsolutePath(s, dogrootBase));
+      end;
+
+      i:= sl.IndexOfName('modroot');
+      if i >= 0 then begin
+        sl.GetNameValue(i, s0, unit_global.modroot);
       end;
 
       i:= sl.IndexOfName('restroot');
@@ -506,7 +513,7 @@ procedure TForm1.ChromiumProcessMessageReceived(Sender: TObject;
 
     us:= UTF8Decode(''
      + '{'
-     + 'const v=window.' + G_VAR_IN_JS_NAME + '={};'
+     + 'const v=window.' + G_VAR_IN_JS_NAME + ';'
      + 'v._ipc={};'
      + 'window.__dogroot = ' + StringPasToJS(dogroot) + ';'
      + 'window.__restroot = ' + StringPasToJS(restroot) + ';'
@@ -612,7 +619,7 @@ type
     FStatusText: string;
     FFileName: string;
     FStream: TStream;
-    isREST: boolean;
+    isREST, isModule: boolean;
   protected
     function  open(const request: ICefRequest; var handle_request: boolean; const callback: ICefCallback): boolean; override;
     function  skip(bytes_to_skip: int64; var bytes_skipped: Int64; const callback: ICefResourceSkipCallback): boolean; override;
@@ -626,23 +633,49 @@ type
 function TCustomResourceHandler.open(const request: ICefRequest;
   var handle_request: boolean; const callback: ICefCallback): boolean;
 var
-  body: string;
-  p: integer;
+  s: string;
+  i, p: integer;
+  handler: TModuleHandlers;
 begin
   FFileName:= UTF8Encode(request.Url);
   FFileName:= normalizeResourceName(FFileName);
 
-  if Pos(restroot + '/', FFileName) = 1 then begin
+  if Pos(unit_global.restroot + '/', FFileName) = 1 then begin
     isREST:= True;
     FFileName:= Copy(FFileName, 7, Length(FFileName));
     Result:= False;
     try
-      body:= GetFromRestApi(FFileName, request, FStatus, FStatusText);
+      s:= GetFromRestApi(FFileName, request, FStatus, FStatusText);
       if (FStatus >= 200) and (FStatus <= 299) then begin
-        FStream:= TStringStream.Create(body);
+        FStream:= TStringStream.Create(s);
         if Assigned(callback) then callback.Cont;
         Result:= True;
       end;
+    except
+      FStatus:= 404; // HTTP_NOTFOUND
+      FStatusText:= 'Not Found';
+    end;
+    Exit;
+  end;
+
+  s:= '';
+  if Pos(unit_global.modroot + '/', FFileName) = 1 then begin
+    s:= Copy(FFileName, Length(unit_global.modroot + '/')+1, Length(FFileName));
+  end else begin
+    p:= Pos('/' + unit_global.modroot + '/', FFileName);
+    if p > 0 then s:= Copy(FFileName, Length('/' + unit_global.modroot + '/')+p, Length(FFileName));
+  end;
+  if s <> '' then begin
+    isModule:= True;
+    Result:= False;
+    try
+      i:= ModuleHandlerList.IndexOf(s);
+      if i < 0 then Raise Exception.Create('');
+      handler:= TModuleHandlers(ModuleHandlerList.Objects[i]);
+      if handler.body = '' then Raise Exception.Create('');
+      FStream:= TStringStream.Create(handler.body);
+      if Assigned(callback) then callback.Cont;
+      Result:= True;
     except
       FStatus:= 404; // HTTP_NOTFOUND
       FStatusText:= 'Not Found';
@@ -704,6 +737,8 @@ begin
 
     if isREST then begin
       response.MimeType:= 'application/json';
+    end else if isModule then begin
+      response.MimeType:= 'text/javascript'; // RFC 9239
     end else begin
       ext:= ExtractFileExt(FFileName);
       if ext = '' then ext:= '.html';
