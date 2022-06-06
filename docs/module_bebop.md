@@ -21,6 +21,11 @@ Reload current html file.
 ### `bebop.browser.showDevTools()`
 * Returns: \<Promise>
 
+### `bebop.mainform.close()`
+* Returns: \<Promise>
+
+Terminate the application.
+
 ### `bebop.mainform.show()`
 * Returns: \<Promise>
 

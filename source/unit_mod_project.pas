@@ -95,9 +95,9 @@ begin
   handler:= TV8HandlerSafe.Create(name, 'mainform.setBounds');
   v1.SetValueByKey('setBounds',
    TCefv8ValueRef.NewFunction('setBounds', handler), V8_PROPERTY_ATTRIBUTE_NONE);
-  //handler:= TV8HandlerSafe.Create(name, 'mainform.close');
-  //v1.SetValueByKey('close',
-  // TCefv8ValueRef.NewFunction('close', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+  handler:= TV8HandlerSafe.Create(name, 'mainform.close');
+  v1.SetValueByKey('close',
+   TCefv8ValueRef.NewFunction('close', handler), V8_PROPERTY_ATTRIBUTE_NONE);
   Result.SetValueByKey('mainform', v1, V8_PROPERTY_ATTRIBUTE_NONE);
 
   handler:= TV8HandlerSafe.Create(name, 'browser.reload');
@@ -505,7 +505,8 @@ begin
     'mainform.set.visible',
     'mainform.setBounds',
     'mainform.show',
-    'mainform.hide': begin
+    'mainform.hide',
+    'mainform.close': begin
       // res = (arg, ...) => new Promise(resolve => {...})
       retval:= NewV8Promise(name,
        TV8HandlerCallback.Create(handler.ModuleName, handler.FuncName, arguments, obj));
