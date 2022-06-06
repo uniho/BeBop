@@ -755,7 +755,7 @@ begin
     w:= w - (r.Width - Form1.Width);
     h:= h - (r.Height - Form1.Height);
     {$ELSE}
-    h:= h - LCLIntf.GetSystemMetrics(SM_CYCAPTION); // ToDo: MacOS
+    h:= h - LCLIntf.GetSystemMetrics(SM_CYCAPTION); // ToDo: for MacOS
     {$ENDIF}
   end;
   Form1.SetBounds(l, t, w, h);
