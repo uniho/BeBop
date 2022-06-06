@@ -67,6 +67,8 @@ begin
 
   acr:= TV8AccessorScreen.Create;
   v1:= TCefv8ValueRef.NewObject(acr, nil);
+  v1.SetValueByAccessor('workAreaLeft', V8_ACCESS_CONTROL_DEFAULT, V8_PROPERTY_ATTRIBUTE_NONE);
+  v1.SetValueByAccessor('workAreaTop', V8_ACCESS_CONTROL_DEFAULT, V8_PROPERTY_ATTRIBUTE_NONE);
   v1.SetValueByAccessor('workAreaWidth', V8_ACCESS_CONTROL_DEFAULT, V8_PROPERTY_ATTRIBUTE_NONE);
   v1.SetValueByAccessor('workAreaHeight', V8_ACCESS_CONTROL_DEFAULT, V8_PROPERTY_ATTRIBUTE_NONE);
   Result.SetValueByKey('screen', v1, V8_PROPERTY_ATTRIBUTE_NONE);
@@ -296,6 +298,24 @@ type
     procedure ExecuteAct; override;
   end;
 
+  { TScreenGetWorkAreaLeftThread }
+
+  TScreenGetWorkAreaLeftThread = class(TPromiseThread)
+  private
+    procedure doUnSafe;
+  protected
+    procedure ExecuteAct; override;
+  end;
+
+  { TScreenGetWorkAreaTopThread }
+
+  TScreenGetWorkAreaTopThread = class(TPromiseThread)
+  private
+    procedure doUnSafe;
+  protected
+    procedure ExecuteAct; override;
+  end;
+
   { TScreenGetWorkAreaWidthThread }
 
   TScreenGetWorkAreaWidthThread = class(TPromiseThread)
@@ -463,6 +483,8 @@ begin
     'browser.loadURL',
     'browser.goBack',
     'browser.goForward',
+    'screen.workAreaLeft',
+    'screen.workAreaTop',
     'screen.workAreaWidth',
     'screen.workAreaHeight',
     'mainform.left',
@@ -518,6 +540,12 @@ begin
     end;
     'browser.goForward': begin
       StartPromiseThread(TBrowserGoBackThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
+    end;
+    'screen.workAreaLeft': begin
+      StartPromiseThread(TScreenGetWorkAreaLeftThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
+    end;
+    'screen.workAreaTop': begin
+      StartPromiseThread(TScreenGetWorkAreaTopThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
     end;
     'screen.workAreaWidth': begin
       StartPromiseThread(TScreenGetWorkAreaWidthThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
@@ -694,20 +722,24 @@ var
   l, t, w, h: integer;
 begin
   l:= Form1.Left;
-  if (Args.GetSize > 0) and (Args.GetType(0) = VTYPE_INT) then begin
-    l:= Args.GetInt(0);
+  if Args.GetSize > 0 then begin
+    if Args.GetType(0) = VTYPE_INT then l:= Args.GetInt(0);
+    if Args.GetType(0) = VTYPE_DOUBLE then l:= Trunc(Args.GetDouble(0));
   end;
   t:= Form1.Top;
-  if (Args.GetSize > 1) and (Args.GetType(1) = VTYPE_INT) then begin
-    t:= Args.GetInt(1);
+  if Args.GetSize > 1 then begin
+    if Args.GetType(1) = VTYPE_INT then t:= Args.GetInt(1);
+    if Args.GetType(1) = VTYPE_DOUBLE then t:= Trunc(Args.GetDouble(1));
   end;
   w:= Form1.Width;
-  if (Args.GetSize > 2) and (Args.GetType(2) = VTYPE_INT) then begin
-    w:= Args.GetInt(2);
+  if Args.GetSize > 2 then begin
+    if Args.GetType(2) = VTYPE_INT then w:= Args.GetInt(2);
+    if Args.GetType(2) = VTYPE_DOUBLE then w:= Trunc(Args.GetDouble(2));
   end;
   h:= Form1.Height;
-  if (Args.GetSize > 3) and (Args.GetType(3) = VTYPE_INT) then begin
-    h:= Args.GetInt(3);
+  if Args.GetSize > 3 then begin
+    if Args.GetType(3) = VTYPE_INT then h:= Args.GetInt(3);
+    if Args.GetType(3) = VTYPE_DOUBLE then h:= Trunc(Args.GetDouble(3));
   end;
   Form1.SetBounds(l, t, w, h);
   CefResolve:= TCefValueRef.New;
@@ -766,7 +798,7 @@ begin
   Result:= False;
 end;
 
-{ TScreenGetworkAreaWidthThread }
+{ TScreenGetWorkAreaLeftThread }
 
 function getWorkAreaRect: TRect;
 var
@@ -774,36 +806,62 @@ var
 begin
   Result:= default(TRect);
   mon:= Form1.Monitor;
-  if mon <> nil then Result:= mon.WorkAreaRect;
+  if Assigned(mon) then Result:= mon.WorkAreaRect;
   if (Result.Width <= 0) or (Result.Height <= 0) then Result:= Screen.WorkAreaRect;
   if (Result.Width <= 0) or (Result.Height <= 0) then Result:= Screen.DesktopRect;
-  if ((Result.Width <= 0) or (Result.Height <= 0)) and (mon <> nil) then Result:= mon.BoundsRect;
+  if ((Result.Width <= 0) or (Result.Height <= 0)) and Assigned(mon) then Result:= mon.BoundsRect;
   if (Result.Width <= 0) or (Result.Height <= 0) then begin
-    Result.Width:= Screen.Width;
-    Result.Height:= Screen.Height;
+    Result.Left:= 0; Result.Top:= 0;
+    Result.Width:= Screen.Width; Result.Height:= Screen.Height;
   end;
 end;
 
-procedure TScreenGetworkAreaWidthThread.doUnSafe;
+procedure TScreenGetWorkAreaLeftThread.doUnSafe;
+begin
+  CefResolve:= TCefValueRef.New;
+  CefResolve.SetInt(getWorkAreaRect.Left);
+end;
+
+procedure TScreenGetWorkAreaLeftThread.ExecuteAct;
+begin
+  Synchronize(@doUnSafe);
+end;
+
+{ TScreenGetWorkAreaTopThread }
+
+procedure TScreenGetWorkAreaTopThread.doUnSafe;
+begin
+  CefResolve:= TCefValueRef.New;
+  CefResolve.SetInt(getWorkAreaRect.Top);
+end;
+
+procedure TScreenGetWorkAreaTopThread.ExecuteAct;
+begin
+  Synchronize(@doUnSafe);
+end;
+
+{ TScreenGetWorkAreaWidthThread }
+
+procedure TScreenGetWorkAreaWidthThread.doUnSafe;
 begin
   CefResolve:= TCefValueRef.New;
   CefResolve.SetInt(getWorkAreaRect.Width);
 end;
 
-procedure TScreenGetworkAreaWidthThread.ExecuteAct;
+procedure TScreenGetWorkAreaWidthThread.ExecuteAct;
 begin
   Synchronize(@doUnSafe);
 end;
 
-{ TScreenGetworkAreaHeightThread }
+{ TScreenGetWorkAreaHeightThread }
 
-procedure TScreenGetworkAreaHeightThread.doUnSafe;
+procedure TScreenGetWorkAreaHeightThread.doUnSafe;
 begin
   CefResolve:= TCefValueRef.New;
   CefResolve.SetInt(getWorkAreaRect.Height);
 end;
 
-procedure TScreenGetworkAreaHeightThread.ExecuteAct;
+procedure TScreenGetWorkAreaHeightThread.ExecuteAct;
 begin
   Synchronize(@doUnSafe);
 end;
@@ -943,7 +1001,8 @@ end;
 procedure TMainformSetLeftThread.doUnSafe;
 begin
   if Args.GetSize > 0 then begin
-    Form1.Left:= Args.GetInt(0);
+    if Args.GetType(0) = VTYPE_INT then Form1.Left:= Args.GetInt(0);
+    if Args.GetType(0) = VTYPE_DOUBLE then Form1.Left:= Trunc(Args.GetDouble(0));
   end;
   CefResolve:= TCefValueRef.New;
   CefResolve.SetBool(True);
@@ -959,7 +1018,8 @@ end;
 procedure TMainformSetTopThread.doUnSafe;
 begin
   if Args.GetSize > 0 then begin
-    Form1.Top:= Args.GetInt(0);
+    if Args.GetType(0) = VTYPE_INT then Form1.Top:= Args.GetInt(0);
+    if Args.GetType(0) = VTYPE_DOUBLE then Form1.Top:= Trunc(Args.GetDouble(0));
   end;
   CefResolve:= TCefValueRef.New;
   CefResolve.SetBool(True);
@@ -975,7 +1035,8 @@ end;
 procedure TMainformSetWidthThread.doUnSafe;
 begin
   if Args.GetSize > 0 then begin
-    Form1.Width:= Args.GetInt(0);
+    if Args.GetType(0) = VTYPE_INT then Form1.Width:= Args.GetInt(0);
+    if Args.GetType(0) = VTYPE_DOUBLE then Form1.Width:= Trunc(Args.GetDouble(0));
   end;
   CefResolve:= TCefValueRef.New;
   CefResolve.SetBool(True);
@@ -991,7 +1052,8 @@ end;
 procedure TMainformSetHeightThread.doUnSafe;
 begin
   if Args.GetSize > 0 then begin
-    Form1.Height:= Args.GetInt(0);
+    if Args.GetType(0) = VTYPE_INT then Form1.Height:= Args.GetInt(0);
+    if Args.GetType(0) = VTYPE_DOUBLE then Form1.Height:= Trunc(Args.GetDouble(0));
   end;
   CefResolve:= TCefValueRef.New;
   CefResolve.SetBool(True);
