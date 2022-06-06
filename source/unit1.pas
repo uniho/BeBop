@@ -18,7 +18,6 @@ type
   { TForm1 }
 
   TForm1 = class(TForm)
-    procedure FormActivate(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -313,10 +312,6 @@ end;
 procedure TForm1.FormShowEvent(Data: PtrInt);
 begin
   CEFWindowParent.Chromium:= Self.Chromium;
-end;
-
-procedure TForm1.FormActivate(Sender: TObject);
-begin
   {$IF Defined(LCLGTK2)}
   // GTK2 needs a visible form to create a browser so we need to use the TForm.OnActivate event
   ThreadWakeupCef:= TThreadWakeupCef.Create;
