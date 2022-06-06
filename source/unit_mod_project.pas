@@ -13,7 +13,11 @@ function CreateRequest(const fileName: string): ICefRequest;
 implementation
 
 uses
-  Forms, unit1, LazFileUtils, LCLIntf, LCLType, unit_global, unit_thread,
+  Forms, unit1, LazFileUtils, LCLIntf, LCLType,
+  {$IF Defined(Windows)}
+  dwmapi,
+  {$ENDIF}
+  unit_global, unit_thread,
   uCEFConstants, uCEFv8Context, uCEFv8Value,
   uCEFv8Accessor, uCEFRequest, uCEFPostData, uCEFPostDataElement, uCEFValue;
 
@@ -720,6 +724,9 @@ end;
 procedure TMainformSetBoundsThread.doUnSafe;
 var
   l, t, w, h: integer;
+  {$IF Defined(WINDOWS)}
+  r: TRect;
+  {$ENDIF}
 begin
   l:= Form1.Left;
   if Args.GetSize > 0 then begin
@@ -743,8 +750,13 @@ begin
   end;
   // outer
   if (Args.GetSize > 4) and Args.GetBool(4) then begin
-    w:= w{ - LCLIntf.GetSystemMetrics(SM_CXSIZEFRAME) * 2};
-    h:= h - LCLIntf.GetSystemMetrics(SM_CYCAPTION) - LCLIntf.GetSystemMetrics(SM_CYSIZEFRAME);
+    {$IF Defined(WINDOWS)}
+    DwmGetWindowAttribute(Form1.Handle, DWMWA_EXTENDED_FRAME_BOUNDS, @r, SizeOf(r));
+    w:= w - (r.Width - Form1.Width);
+    h:= h - (r.Height - Form1.Height);
+    {$ELSE}
+    h:= h - LCLIntf.GetSystemMetrics(SM_CYCAPTION); // ToDo: MacOS
+    {$ENDIF}
   end;
   Form1.SetBounds(l, t, w, h);
   CefResolve:= TCefValueRef.New;
@@ -1181,6 +1193,10 @@ const
      '';
 
 initialization
+  {$IF Defined(WINDOWS)}
+  InitDwmLibrary;
+  {$ENDIF}
+
   // Regist module handler
   AddModuleHandler(MODULE_NAME, @requireCreate, @requireExecute, @safeExecute); // DEPRECATED
   AddModuleHandler(MODULE_NAME, _body, @importCreate, @safeExecute);
