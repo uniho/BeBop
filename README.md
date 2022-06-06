@@ -115,14 +115,13 @@ mORMot is a huge library / framework, but FPC links just the necessary part.
 
 ### ♪ Lazarus and FPC
 We are using below.
+
 #### Windows (win32/win64)
 Lazarus 2.2.2 + FPC 3.2.2
 
 #### Linux (x86_64-linux-gtk2)
-Lazarus 2.0.12 + FPC 3.2.0 or 3.2.2
+Lazarus 2.2.2 + FPC 3.2.2
   
-NOTE: Both Lazarus 2.2.0 and 2.2.2 on Linux x86_64-linux-gtk2 is very buggy, so we have to use a bit old version.
-
 #### MacOS (x86_64-darwin-cocoa)
 Lazarus 2.2.2 + FPC 3.2.2
 
