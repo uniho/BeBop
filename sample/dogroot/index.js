@@ -4,14 +4,13 @@ mainform.caption = 'DEMO デモですよ'
 
 const w = 800
 const h = 600
-// mainform.left = (await screen.workAreaWidth - w) / 2
-// mainform.top = (await screen.workAreaHeight - h) / 2
+const l = (await screen.workAreaWidth - w) / 2 + await screen.workAreaLeft
+const t = (await screen.workAreaHeight - h) / 2 + await screen.workAreaTop
+// mainform.left = l
+// mainform.top = t
 // mainform.width = w
 // mainform.height = h
-await mainform.setBounds(
-  (await screen.workAreaWidth - w) / 2, (await screen.workAreaHeight - h) / 2,
-  w, h
-)
+await mainform.setBounds(l, t, w, h, true)
 
 if (__argv.indexOf('-autostart') >= 0) {
   location.href = 'download.html'
