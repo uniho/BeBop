@@ -1129,6 +1129,10 @@ const
        'app.terminate=' + _import + '.app.terminate;' +
 
      'export const screen={' +
+       'get workAreaLeft(){' +
+         'return ' + _import + '.screen.workAreaLeft},' +
+       'get workAreaTop(){' +
+         'return ' + _import + '.screen.workAreaTop},' +
        'get workAreaWidth(){' +
          'return ' + _import + '.screen.workAreaWidth},' +
        'get workAreaHeight(){' +
