@@ -3,6 +3,7 @@ object Form1: TForm1
   Height = 240
   Top = 145
   Width = 320
+  OnActivate = FormActivate
   OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
