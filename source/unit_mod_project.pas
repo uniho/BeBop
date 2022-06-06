@@ -1189,6 +1189,8 @@ initialization
   AddPromiseThreadClass(MODULE_NAME, TBrowserLoadURLThread); // DEPRECATED
   AddPromiseThreadClass(MODULE_NAME, TBrowserGoBackThread); // DEPRECATED
   AddPromiseThreadClass(MODULE_NAME, TBrowserGoForwardThread); // DEPRECATED
+  AddPromiseThreadClass(MODULE_NAME, TScreenGetWorkAreaLeftThread);
+  AddPromiseThreadClass(MODULE_NAME, TScreenGetWorkAreaTopThread);
   AddPromiseThreadClass(MODULE_NAME, TScreenGetWorkAreaWidthThread);
   AddPromiseThreadClass(MODULE_NAME, TScreenGetWorkAreaHeightThread);
   AddPromiseThreadClass(MODULE_NAME, TMainFormGetLeftThread);
