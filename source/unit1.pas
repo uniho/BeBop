@@ -291,8 +291,11 @@ begin
 
   Self.DoubleBuffered:= False;
 
-  {$IF not Defined(LINUX)}
+  {$IF not Defined(LCLGTK2)}
   ThreadWakeupCef:= TThreadWakeupCef.Create;
+  {$ELSE}
+  // GTK2 needs a visible form to create a browser so we need to use the TForm.OnActivate event
+  Self.SetBounds(0, 0, 1, 1);
   {$ENDIF}
 end;
 
@@ -314,9 +317,8 @@ end;
 
 procedure TForm1.FormActivate(Sender: TObject);
 begin
-  // Linux needs a visible form to create a browser so we need to use the
-  // TForm.OnActivate event
-  {$IF Defined(LINUX)}
+  {$IF Defined(LCLGTK2)}
+  // GTK2 needs a visible form to create a browser so we need to use the TForm.OnActivate event
   ThreadWakeupCef:= TThreadWakeupCef.Create;
   {$ENDIF}
 end;

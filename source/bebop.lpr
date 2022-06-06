@@ -36,7 +36,9 @@ begin
     if GlobalCEFApp.StartMainProcess then begin
       RequireDerivedFormResource:=True;
       Application.Scaled:=True;
+      {$IFNDEF LCLGTK2}
       Application.ShowMainForm:= False;
+      {$ENDIF}
       Application.Initialize;
       Application.CreateForm(TForm1, Form1);
       Application.Run;

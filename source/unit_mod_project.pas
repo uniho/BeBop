@@ -13,7 +13,7 @@ function CreateRequest(const fileName: string): ICefRequest;
 implementation
 
 uses
-  Forms, unit1, LazFileUtils, unit_global, unit_thread,
+  Forms, unit1, LazFileUtils, LCLIntf, LCLType, unit_global, unit_thread,
   uCEFConstants, uCEFv8Context, uCEFv8Value,
   uCEFv8Accessor, uCEFRequest, uCEFPostData, uCEFPostDataElement, uCEFValue;
 
@@ -740,6 +740,11 @@ begin
   if Args.GetSize > 3 then begin
     if Args.GetType(3) = VTYPE_INT then h:= Args.GetInt(3);
     if Args.GetType(3) = VTYPE_DOUBLE then h:= Trunc(Args.GetDouble(3));
+  end;
+  // outer
+  if (Args.GetSize > 4) and Args.GetBool(4) then begin
+    w:= w{ - LCLIntf.GetSystemMetrics(SM_CXSIZEFRAME) * 2};
+    h:= h - LCLIntf.GetSystemMetrics(SM_CYCAPTION) - LCLIntf.GetSystemMetrics(SM_CYSIZEFRAME);
   end;
   Form1.SetBounds(l, t, w, h);
   CefResolve:= TCefValueRef.New;
