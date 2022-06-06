@@ -768,10 +768,26 @@ end;
 
 { TScreenGetworkAreaWidthThread }
 
+function getWorkAreaRect: TRect;
+var
+  mon: TMonitor;
+begin
+  Result:= default(TRect);
+  mon:= Form1.Monitor;
+  if mon <> nil then Result:= mon.WorkAreaRect;
+  if (Result.Width <= 0) or (Result.Height <= 0) then Result:= Screen.WorkAreaRect;
+  if (Result.Width <= 0) or (Result.Height <= 0) then Result:= Screen.DesktopRect;
+  if ((Result.Width <= 0) or (Result.Height <= 0)) and (mon <> nil) then Result:= mon.BoundsRect;
+  if (Result.Width <= 0) or (Result.Height <= 0) then begin
+    Result.Width:= Screen.Width;
+    Result.Height:= Screen.Height;
+  end;
+end;
+
 procedure TScreenGetworkAreaWidthThread.doUnSafe;
 begin
   CefResolve:= TCefValueRef.New;
-  CefResolve.SetInt(Screen.WorkAreaWidth);
+  CefResolve.SetInt(getWorkAreaRect.Width);
 end;
 
 procedure TScreenGetworkAreaWidthThread.ExecuteAct;
@@ -784,14 +800,13 @@ end;
 procedure TScreenGetworkAreaHeightThread.doUnSafe;
 begin
   CefResolve:= TCefValueRef.New;
-  CefResolve.SetInt(Screen.WorkAreaHeight);
+  CefResolve.SetInt(getWorkAreaRect.Height);
 end;
 
 procedure TScreenGetworkAreaHeightThread.ExecuteAct;
 begin
   Synchronize(@doUnSafe);
 end;
-
 
 { TV8AccessorMainform }
 
