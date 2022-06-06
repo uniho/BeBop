@@ -4,8 +4,8 @@ mainform.caption = 'DEMO デモですよ'
 
 const w = 800
 const h = 600
-const l = (await screen.workAreaWidth - w) / 2
-const t = (await screen.workAreaHeight - h) / 2
+const l = (await screen.workAreaWidth - w) / 2 + await screen.workAreaLeft
+const t = (await screen.workAreaHeight - h) / 2 + await screen.workAreaTop
 // mainform.left = l
 // mainform.top = t
 // mainform.width = w
