@@ -542,8 +542,12 @@ procedure TForm1.ChromiumProcessMessageReceived(Sender: TObject;
   begin
     params:= message.ArgumentList;
     i:= ThreadClassList.IndexOf(UTF8Encode(params.GetString(1)));
-    if i < 0 then
-      raise SysUtils.Exception.Create(UTF8Encode('You forgot to add "' + params.GetString(1) + '" thread to ThreadClassList.'));
+    if i < 0 then begin
+      Chromium.ExecuteJavaScript(
+        'throw new Error(`You forgot to add "' + params.GetString(1) + '" thread to ThreadClassList.`);',
+        'about:blank');
+      Exit;
+    end;
     thread:= TPromiseThreadClass(ThreadClassList.Objects[i]).Create();
     thread.UID:= UTF8Encode(params.GetString(0));
     thread.Frame:= frame;
