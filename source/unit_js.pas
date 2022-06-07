@@ -597,7 +597,7 @@ function TV8HandlerGlobal.Execute(const name: ustring; const obj: ICefv8Value;
       end;
       handlers:= TModuleHandlers(ModuleHandlerList.Objects[i]);
       if not Assigned(handlers.requireCreate) then begin
-        exception:= '"' + us + '" module dose NOT support requireSync(). Use require().';
+        exception:= '"' + us + '" module does NOT support requireSync(). Use require().';
         exit;
       end;
       Result:= handlers.requireCreate(us, obj, arguments, retval, exception);
@@ -646,6 +646,10 @@ begin
   Result:= False;
   i:= ModuleHandlerList.IndexOf(UTF8Encode(name));
   handler:= TModuleHandlers(ModuleHandlerList.Objects[i]);
+  if not Assigned(handler.requireExecute) then begin
+    exception:= '"' + name + '" module does NOT support require(). Use import().';
+    exit;
+  end;
   Result:= handler.requireExecute(name, obj, arguments, retval, exception);
 end;
 
