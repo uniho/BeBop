@@ -28,7 +28,6 @@ type
     CEFWindowParent: TCEFLinkedWindowParent;
     InformationPanel: TPanel;
     InformationText: TStaticText;
-    FCanClose: boolean;
     procedure ChromiumAfterCreated(Sender: TObject; const browser: ICefBrowser);
     procedure ChromiumBeforeClose(Sender: TObject; const browser: ICefBrowser);
     //procedure ChromiumClose(Sender: TObject; const browser: ICefBrowser; var aAction : TCefCloseBrowserAction);
@@ -101,8 +100,6 @@ type
 
   TThreadShutdownCef = class(TThread)
   private
-    canClose: boolean;
-    procedure Check;
   protected
     procedure Execute; override;
   public
@@ -320,7 +317,7 @@ end;
 
 procedure TForm1.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
-  FCanClose:= False;
+  unit_global.appCanClose:= False;
   ThreadShutdownCef:= TThreadShutdownCef.Create;
   Self.CEFWindowParent.Chromium:= Self.Chromium;
   FreeAndNil(Self.CEFWindowParent);
@@ -342,7 +339,7 @@ procedure TForm1.ChromiumBeforeClose(Sender: TObject; const browser: ICefBrowser
   );
 begin
   // The main browser is being destroyed
-  FCanClose := Chromium.BrowserId = 0;
+  unit_global.appCanClose:= Chromium.BrowserId = 0;
 end;
 
 procedure TForm1.ChromiumLoadStart(Sender: TObject; const browser: ICefBrowser;
@@ -542,8 +539,12 @@ procedure TForm1.ChromiumProcessMessageReceived(Sender: TObject;
   begin
     params:= message.ArgumentList;
     i:= ThreadClassList.IndexOf(UTF8Encode(params.GetString(1)));
-    if i < 0 then
-      raise SysUtils.Exception.Create(UTF8Encode('You forgot to add "' + params.GetString(1) + '" thread to ThreadClassList.'));
+    if i < 0 then begin
+      Chromium.ExecuteJavaScript(
+        'throw new Error(`You forgot to add "' + params.GetString(1) + '" thread to ThreadClassList.`);',
+        'about:blank');
+      Exit;
+    end;
     thread:= TPromiseThreadClass(ThreadClassList.Objects[i]).Create();
     thread.UID:= UTF8Encode(params.GetString(0));
     thread.Frame:= frame;
@@ -837,16 +838,11 @@ begin
   inherited Destroy;
 end;
 
-procedure TThreadShutdownCef.Check;
-begin
-  canClose := Form1.FCanClose;
-end;
-
 procedure TThreadShutdownCef.Execute;
 begin
-  canClose:= false;
-  while not canClose do begin
-    Synchronize(@Check);
+  unit_global.appClosing:= true;
+  unit_global.appCanClose:= false;
+  while not unit_global.appCanClose do begin
     sleep(10);
   end;
 end;

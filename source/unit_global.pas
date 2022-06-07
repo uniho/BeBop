@@ -41,6 +41,7 @@ var
   ThreadList, ThreadClassList, RestClassList: TStringList;
   ModuleHandlerList: TStringList;
   ObjectList: TSafeStringList;
+  appCanClose, appClosing: boolean;
 
 function NewUID(): string;
 function normalizeResourceName(const filename: string): string;
