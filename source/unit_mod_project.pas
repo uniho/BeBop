@@ -618,7 +618,7 @@ begin
   s:= '';
   if Args.GetSize > 0 then s:= UTF8Encode(Args.GetString(0));
   Application.MessageBox(PChar(s), PChar(PROJECT_NAME));
-  Form1.Chromium.SetFocus(True);
+  unit_global.Chromium.SetFocus(True);
   CefResolve:= TCefValueRef.New;
   CefResolve.SetBool(true);
 end;
@@ -646,7 +646,7 @@ end;
 
 procedure TBrowsershowDevToolsThread.doUnSafe;
 begin
-  Form1.Chromium.ShowDevTools(Point(0, 0));
+  unit_global.Chromium.ShowDevTools(Point(0, 0));
   CefResolve:= TCefValueRef.New;
   CefResolve.SetBool(true);
 end;
@@ -660,7 +660,7 @@ end;
 
 procedure TBrowserReloadThread.doUnSafe;
 begin
-  Form1.Chromium.ReloadIgnoreCache;
+  unit_global.Chromium.ReloadIgnoreCache;
   CefResolve:= TCefValueRef.New;
   CefResolve.SetBool(true);
 end;
@@ -679,7 +679,7 @@ begin
   NewFunction('console.warn("browser.loadURL() has been deprecated. Please use location.href = newURL instead.");');
   if Args.GetSize > 0 then begin
     s:= UTF8Encode(Args.GetString(0));
-    Form1.Chromium.LoadURL(UTF8Decode('http://0.0.0.0/' + s));
+    unit_global.Chromium.LoadURL(UTF8Decode('http://0.0.0.0/' + s));
   end;
   CefResolve:= TCefValueRef.New;
   CefResolve.SetBool(true);
