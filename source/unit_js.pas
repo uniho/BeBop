@@ -495,6 +495,13 @@ end;
 
 { TRemoveObjectListTask }
 
+constructor TRemoveObjectListTask.Create(const auuid: string; aresult: TTaskResult);
+begin
+  uuid:= auuid;
+  result:= aresult;
+  inherited Create;
+end;
+
 procedure TRemoveObjectListTask.Execute;
 begin
   ObjectList.RemoveObject(uuid);
@@ -506,13 +513,6 @@ end;
 procedure TTaskResult.callback(obj: TObject);
 begin
   result:= obj;
-end;
-
-constructor TRemoveObjectListTask.Create(const auuid: string; aresult: TTaskResult);
-begin
-  uuid:= auuid;
-  result:= aresult;
-  inherited Create;
 end;
 
 function AddObjectList(obj: TObject): string;
