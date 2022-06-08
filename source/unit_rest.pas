@@ -20,7 +20,7 @@ type
   protected
     Status: integer;
     PathArray: array of string;
-    QueryList: TStringList;
+    QueryList, responseHeader: TStringList;
     Path, Query, Body, StatusText: string;
     Request: ICefRequest;
     FCriticalSection: TRtlCriticalSection;
@@ -40,7 +40,8 @@ type
 
 procedure AddRestApiClass(const restName: string; baseClass: TRestApiClass);
 
-function GetFromRestApi(const url: string; request: ICefRequest; var status: integer; var statusText: string): string;
+function GetFromRestApi(const url: string; request: ICefRequest;
+  var status: integer; var statusText: string; const responseHeader: TStringList): string;
 
 implementation
 
@@ -58,7 +59,8 @@ begin
   RestClassList.AddObject(restName, TObject(baseClass));
 end;
 
-function GetFromRestApi(const url: string; request: ICefRequest; var status: integer; var statusText: string): string;
+function GetFromRestApi(const url: string; request: ICefRequest;
+  var status: integer; var statusText: string; const responseHeader: TStringList): string;
 var
   rest: TRestApiBase;
   i, len: integer;
@@ -113,6 +115,7 @@ begin
     {$ENDIF}
 
     rest.Request:= request;
+    rest.responseHeader:= responseHeader;
     rest.Body:= '';
     if Assigned(request.PostData) then begin
       len:= request.PostData.GetElementCount;

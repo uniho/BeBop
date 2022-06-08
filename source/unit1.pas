@@ -630,6 +630,7 @@ type
     FStatusText: string;
     FFileName: string;
     FStream: TStream;
+    FResponseHeader: TStringList;
     isREST, isModule: boolean;
   protected
     function  open(const request: ICefRequest; var handle_request: boolean; const callback: ICefCallback): boolean; override;
@@ -653,10 +654,10 @@ begin
 
   if Pos(unit_global.restroot + '/', FFileName) = 1 then begin
     isREST:= True;
-    FFileName:= Copy(FFileName, 7, Length(FFileName));
+    FFileName:= Copy(FFileName, Length(unit_global.restroot)+2, Length(FFileName));
     Result:= False;
     try
-      s:= GetFromRestApi(FFileName, request, FStatus, FStatusText);
+      s:= GetFromRestApi(FFileName, request, FStatus, FStatusText, FResponseHeader);
       if (FStatus >= 200) and (FStatus <= 299) then begin
         FStream:= TStringStream.Create(s);
         if Assigned(callback) then callback.Cont;
@@ -671,10 +672,10 @@ begin
 
   s:= '';
   if Pos(unit_global.modroot + '/', FFileName) = 1 then begin
-    s:= Copy(FFileName, Length(unit_global.modroot + '/')+1, Length(FFileName));
+    s:= Copy(FFileName, Length(unit_global.modroot)+2, Length(FFileName));
   end else begin
     p:= Pos('/' + unit_global.modroot + '/', FFileName);
-    if p > 0 then s:= Copy(FFileName, Length('/' + unit_global.modroot + '/')+p, Length(FFileName));
+    if p > 0 then s:= Copy(FFileName, Length(unit_global.modroot)+p+2, Length(FFileName));
   end;
   if s <> '' then begin
     isModule:= True;
@@ -737,25 +738,44 @@ begin
 end;
 
 procedure TCustomResourceHandler.GetResponseHeaders(
-  const response: ICefResponse; out responseLength: Int64; out
-  redirectUrl: ustring);
+  const response: ICefResponse; out responseLength: Int64;
+  out redirectUrl: ustring);
 var
-  ext: string;
+  ext, s: string;
+  mime: ustring;
+  i, p: integer;
 begin
   if (response <> nil) then begin
     response.Status:= FStatus;
     response.StatusText:= UTF8Decode(FStatusText);
 
+    mime:= '';
+    for i:= 0 to FResponseHeader.Count-1 do begin
+      s:= Trim(FResponseHeader[i]);
+      if (Pos('content-type', LowerCase(s)) = 1) and
+        (Copy(Trim(Copy(s, Length('content-type')+1, Length(s))), 1, 1) = ':') then begin
+        p:= Pos(':', s);
+        mime:= UTF8Decode(Trim(Copy(s, p+1, Length(s))));
+      end else begin
+        p:= Pos(':', s);
+        if p > 0 then
+          response.SetHeaderByName(
+            UTF8Decode(Trim(Copy(s, 1, p-1))), UTF8Decode(Trim(Copy(s, p+1, Length(s)))), true);
+      end;
+    end;
+
     if isREST then begin
-      response.MimeType:= 'application/json';
+      if mime = '' then mime:= 'application/json; charset=utf-8';
     end else if isModule then begin
-      response.MimeType:= 'text/javascript'; // RFC 9239
+      mime:= 'text/javascript; charset=utf-8'; // RFC 9239
     end else begin
       ext:= ExtractFileExt(FFileName);
       if ext = '' then ext:= '.html';
       Delete(ext, 1, 1);
-      response.MimeType:= CefGetMimeType(UTF8Decode(ext));
+      mime:= CefGetMimeType(UTF8Decode(ext));
     end;
+
+    if mime <> '' then response.MimeType:= mime;
   end;
 
   if Assigned(FStream) then responseLength:= FStream.Size;
@@ -766,12 +786,14 @@ constructor TCustomResourceHandler.Create(const browser: ICefBrowser;
 begin
   FStatus:= 200;
   FStatusText:= 'OK';
+  FResponseHeader:= TSTringList.Create;
   inherited Create(browser, frame, schemeName, request);
 end;
 
 destructor TCustomResourceHandler.Destroy;
 begin
   if Assigned(FStream) then FStream.Free;
+  FResponseHeader.Free;
   inherited Destroy;
 end;
 
