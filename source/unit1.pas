@@ -99,6 +99,8 @@ type
 
   TThreadShutdownCef = class(TThread)
   private
+    canClose: boolean;
+    procedure Check;
   protected
     procedure Execute; override;
   public
@@ -837,11 +839,17 @@ begin
   inherited Destroy;
 end;
 
+procedure TThreadShutdownCef.Check;
+begin
+  canClose:= unit_global.appCanClose;
+end;
+
 procedure TThreadShutdownCef.Execute;
 begin
   unit_global.appClosing:= true;
-  unit_global.appCanClose:= false;
-  while not unit_global.appCanClose do begin
+  canClose:= false;
+  while not canClose do begin
+    Synchronize(@Check);
     sleep(10);
   end;
 end;
