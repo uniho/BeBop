@@ -554,25 +554,12 @@ procedure TForm1.ChromiumProcessMessageReceived(Sender: TObject;
     thread.Start;
   end;
 
-  //
-  procedure set_share_dictionary;
-  var
-    params: ICefListValue;
-  begin
-    if not Assigned(unit_global.shareDictionary) then
-      unit_global.shareDictionary:= TCefDictionaryValueRef.New;
-
-    params:= message.ArgumentList;
-    unit_global.shareDictionary.SetValue(params.GetString(0), params.GetValue(1));
-  end;
-
 //
 begin
   Result:= False;
   case message.name of
     'context_created': context_created;
     'promise_thread_start': promise_thread_start;
-    'set_share_dictionary': set_share_dictionary;
   end;
   Result:= True;
 end;

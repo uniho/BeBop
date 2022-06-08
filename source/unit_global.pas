@@ -5,7 +5,7 @@ unit unit_global;
 interface
 
 uses
-  Classes, SysUtils, uCefInterfaces, uCefChromium;
+  Classes, SysUtils, uCefChromium;
 
 const
   PROJECT_NAME = 'bebop';
@@ -42,7 +42,6 @@ var
   ModuleHandlerList: TStringList;
   ObjectList: TSafeStringList;
   appCanClose, appClosing: boolean;
-  shareDictionary: ICefDictionaryValue;
   Chromium: TChromium;
 
 function NewUID(): string;
