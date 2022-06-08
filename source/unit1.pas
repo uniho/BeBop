@@ -70,7 +70,7 @@ uses
 {$ENDIF}
   LCLIntf, variants, LCLType, LazFileUtils,
   uCEFConstants, uCEFApplication, uCEFResourceHandler, uCEFWorkScheduler,
-  uCEFMiscFunctions, uCefDictionaryValue,
+  uCEFMiscFunctions,
   unit_js, unit_global, unit_thread, unit_rest;
 
 {$R *.lfm}
