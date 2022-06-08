@@ -56,7 +56,6 @@ type
   protected
     procedure RealizeBounds; override;
   public
-    Chromium: TChromium;
   end;
 
 var
@@ -71,7 +70,7 @@ uses
 {$ENDIF}
   LCLIntf, variants, LCLType, LazFileUtils,
   uCEFConstants, uCEFApplication, uCEFResourceHandler, uCEFWorkScheduler,
-  uCEFMiscFunctions, uCEFProcessMessage,
+  uCEFMiscFunctions, uCefDictionaryValue,
   unit_js, unit_global, unit_thread, unit_rest;
 
 {$R *.lfm}
@@ -308,7 +307,7 @@ end;
 
 procedure TForm1.FormShowEvent(Data: PtrInt);
 begin
-  CEFWindowParent.Chromium:= Self.Chromium;
+  CEFWindowParent.Chromium:= unit_global.Chromium;
   {$IF Defined(LCLGTK2)}
   // GTK2 needs a visible form to create a browser so we need to use the TForm.OnActivate event
   ThreadWakeupCef:= TThreadWakeupCef.Create;
@@ -319,7 +318,7 @@ procedure TForm1.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
   unit_global.appCanClose:= False;
   ThreadShutdownCef:= TThreadShutdownCef.Create;
-  Self.CEFWindowParent.Chromium:= Self.Chromium;
+  Self.CEFWindowParent.Chromium:= nil;
   FreeAndNil(Self.CEFWindowParent);
 end;
 
@@ -555,12 +554,25 @@ procedure TForm1.ChromiumProcessMessageReceived(Sender: TObject;
     thread.Start;
   end;
 
+  //
+  procedure set_share_dictionary;
+  var
+    params: ICefListValue;
+  begin
+    if not Assigned(unit_global.shareDictionary) then
+      unit_global.shareDictionary:= TCefDictionaryValueRef.New;
+
+    params:= message.ArgumentList;
+    unit_global.shareDictionary.SetValue(params.GetString(0), params.GetValue(1));
+  end;
+
 //
 begin
   Result:= False;
   case message.name of
     'context_created': context_created;
     'promise_thread_start': promise_thread_start;
+    'set_share_dictionary': set_share_dictionary;
   end;
   Result:= True;
 end;
@@ -806,12 +818,12 @@ end;
 
 procedure TThreadWakeupCef.Check1;
 begin
-  wakeup:= Form1.Chromium.CreateBrowser(Form1.CEFWindowParent.Handle, Form1.CEFWindowParent.BoundsRect);
+  wakeup:= unit_global.Chromium.CreateBrowser(Form1.CEFWindowParent.Handle, Form1.CEFWindowParent.BoundsRect);
 end;
 
 procedure TThreadWakeupCef.Check2;
 begin
-  wakeup:= Form1.Chromium.Initialized;
+  wakeup:= unit_global.Chromium.Initialized;
 end;
 
 procedure TThreadWakeupCef.Execute;

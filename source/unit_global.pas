@@ -5,7 +5,7 @@ unit unit_global;
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils, uCefInterfaces, uCefChromium;
 
 const
   PROJECT_NAME = 'bebop';
@@ -42,6 +42,8 @@ var
   ModuleHandlerList: TStringList;
   ObjectList: TSafeStringList;
   appCanClose, appClosing: boolean;
+  shareDictionary: ICefDictionaryValue;
+  Chromium: TChromium;
 
 function NewUID(): string;
 function normalizeResourceName(const filename: string): string;

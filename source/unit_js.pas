@@ -107,7 +107,7 @@ procedure FreeMemProc(buffer: Pointer);
 
 implementation
 uses
-  unit1, unit_global,
+  unit_global,
   {$IFDEF USE_LUA_MODULE}
   unit_mod_lua,
   {$ENDIF}
@@ -852,7 +852,7 @@ begin
 
   msg.ArgumentList.SetString(2, UTF8Decode(uid));
 
-  Form1.Chromium.SendProcessMessage(PID_RENDERER, msg);
+  unit_global.Chromium.SendProcessMessage(PID_RENDERER, msg);
 end;
 
 function NewFunctionV8(const code: string; args: TCefv8ValueArray): ICefv8Value;
