@@ -5,6 +5,7 @@
 * [bebop Module] Add `mainform.setBounds()`.
 * [Child process Module] Add `dir` option.
 * [Child process Module] Add `env` option.
+* Add web_util module.
 * Set `require()` deprecated.
   Please use [`import statement`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import) instead.  
 

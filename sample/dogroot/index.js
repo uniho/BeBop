@@ -26,6 +26,8 @@ if (__argv.indexOf('-autostart') >= 0) {
   location.href = 'test_util.html'
 } else if (__argv.indexOf('-test_rest') >= 0) {
   location.href = 'test_rest.html'
+} else if (__argv.indexOf('-test_web') >= 0) {
+  location.href = 'test_web.html'
 } else {
   location.href = 'sample01.html'
 }

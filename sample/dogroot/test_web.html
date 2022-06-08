@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Test</title>
+</head>
+
+<body>
+  <div id="App"></div>
+</body>
+
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/htm"></script>
+
+<script type="module">
+
+  // Emotion is a performant and flexible CSS-in-JS library. 
+  // https://github.com/emotion-js/emotion
+  import {css, injectGlobal} from 'https://cdn.skypack.dev/@emotion/css?min'
+
+  // htm is JSX-like syntax in plain JavaScript - no transpiler necessary.
+  // https://github.com/developit/htm
+  const html = htm.bind(React.createElement)
+
+  // Render-as-You-Fetch
+  // https://reactjs.org/docs/concurrent-mode-suspense.html#approach-3-render-as-you-fetch-using-suspense
+  const wrapPromise = promise => {
+    let status = "pending";
+    let result;
+    const suspender = promise.then(
+      r => {
+        status = "success";
+        result = r;
+      },
+      e => {
+        status = "error";
+        result = e;
+      }
+    );
+    return {
+      read() {
+        if (status === "pending") {
+          throw suspender;
+        } else if (status === "error") {
+          throw result;
+        } else if (status === "success") {
+          return result;
+        }
+      }
+    };
+  }
+
+  const URL = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+  //const URL = 'https://cef-builds.spotifycdn.com/cef_binary_102.0.9+g1c5e658+chromium-102.0.5005.63_windows64.tar.bz2'
+
+  const util = await import('/~/web_util')
+  const path = await import("/~/path")
+  const fs = await import("/~/fs")
+
+  const saveName = path.join(__execPath, 'downloads', path.basename(URL))
+
+  const Test = props => {
+    
+    const [state, setState] = React.useState({doing:false})
+    const refRequest = React.useRef(false)
+
+    const onClick = async e => {
+      if (!state.doing) {
+        setState({doing: true})
+        await fs.mkdir(path.dirname(saveName), {recursive: true})
+        refRequest.current = await util.downloadFile(URL, saveName)
+        ;(async() => {
+          let stat
+          while (1) {
+            stat = await refRequest.current.read()
+            if (stat.finished) break
+            setState({
+              doing: true,
+              curBytes: stat.curBytes, totalBytes: stat.totalBytes
+            })
+          }
+          setState({
+            doing: false,
+            curBytes: stat.curBytes, totalBytes: stat.totalBytes
+          })
+        })()
+      } else {
+        refRequest.current.cancel()
+      }
+    }
+
+    return html`
+    <div className="red-box">
+      <div>${URL}</div>
+      <div> 👉 ${saveName}</div>
+      <span>
+        <button onClick=${onClick}>
+          ${state.doing ? 'Cancel' : 'Start'}
+        </button>
+        ${state.curBytes && state.totalBytes ? `${state.curBytes} / ${state.totalBytes}` : ''}
+      </span>
+    </div>
+    `
+  }
+
+  //
+  injectGlobal`
+  body {
+    font-size: 16px;  /* = 1rem */
+    font-family: "Open Sans", Verdana, Roboto, "Droid Sans", "ヒラギノ角ゴ ProN W3", "Hiragino Kaku Gothic ProN", "メイリオ", Meiryo, sans-serif;
+    color: rgba(0,0,0,.87);
+    background-color: white;
+  }
+
+  .red-box {
+    white-space: pre-wrap;
+    word-break: break-all;
+    border: 2px solid tomato;
+    margin: 1rem;
+    padding: 0.25rem 1rem;
+    
+    button {
+      background: palevioletred;
+      color: white;
+      border-radius: 3px;
+      border: 2px solid palevioletred;
+      margin: 1rem 1rem;
+      padding: 0.25rem 1rem;
+      cursor: pointer;
+    }
+  }
+  `
+
+  const elm = html`
+    <${Test}/>
+  `
+  
+  const root = ReactDOM.createRoot(document.getElementById("App"))
+  root.render(elm)
+
+</script>
+
+</html>
