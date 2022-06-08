@@ -616,7 +616,7 @@ begin
 {$IF Defined(DARWIN)}
   size.width:= Self.ClientWidth;
   size.height:= Self.ClientHeight;
-  NSView(Self.Chromium.WindowHandle).setFrameSize(size);
+  NSView(unit_global.Chromium.WindowHandle).setFrameSize(size);
 {$ENDIF}
 end;
 

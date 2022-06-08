@@ -5,7 +5,7 @@ unit unit_global;
 interface
 
 uses
-  Classes, SysUtils, uCefChromium;
+  Classes, SysUtils, uCEFChromium;
 
 const
   PROJECT_NAME = 'bebop';
