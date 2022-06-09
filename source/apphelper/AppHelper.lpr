@@ -1,7 +1,5 @@
 program AppHelper;
 
-{.$DEFINE USE_LUA_MODULE}
-
 {$mode objfpc}{$H+}
 
 uses
@@ -10,11 +8,6 @@ uses
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
   uCEFApplication,
-  unit_mod_fs, unit_mod_util, unit_mod_path, unit_mod_process, unit_mod_child_process,
-  unit_mod_project, unit_mod_web_util,
-  {$IFDEF USE_LUA_MODULE}
-  unit_mod_lua,
-  {$ENDIF}
   unit_js;
 
 begin

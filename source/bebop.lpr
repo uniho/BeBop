@@ -15,9 +15,7 @@ uses
   uCEFLazarusCocoa, // required for Cocoa
   Interfaces, // this includes the LCL widgetset
   Forms, uCEFApplication, uCEFConstants, uCEFWorkScheduler,
-  unit1, unit_js, unit_mod_fs, unit_mod_project, unit_global,
-  unit_mod_child_process, unit_thread, unit_mod_path, unit_mod_util,
-  unit_mod_process, unit_rest, unit_mod_web_util;
+  unit1, unit_js, unit_global, unit_thread, unit_rest;
 
 {.$R *.res}
 

@@ -33,7 +33,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="13">
+    <Units Count="6">
       <Unit0>
         <Filename Value="bebop.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -51,45 +51,17 @@
         <IsPartOfProject Value="True"/>
       </Unit2>
       <Unit3>
-        <Filename Value="unit_mod_fs.pas"/>
+        <Filename Value="unit_global.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit3>
       <Unit4>
-        <Filename Value="unit_mod_project.pas"/>
+        <Filename Value="unit_thread.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit4>
       <Unit5>
-        <Filename Value="unit_global.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit5>
-      <Unit6>
-        <Filename Value="unit_mod_child_process.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit6>
-      <Unit7>
-        <Filename Value="unit_thread.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit7>
-      <Unit8>
-        <Filename Value="unit_mod_path.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit8>
-      <Unit9>
-        <Filename Value="unit_mod_util.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit9>
-      <Unit10>
-        <Filename Value="unit_mod_process.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit10>
-      <Unit11>
         <Filename Value="unit_rest.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit11>
-      <Unit12>
-        <Filename Value="unit_mod_web_util.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit12>
+      </Unit5>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
