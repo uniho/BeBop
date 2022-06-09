@@ -2,7 +2,7 @@
 // Emotion is a performant and flexible CSS-in-JS library. 
 // https://github.com/emotion-js/emotion
 import {css, injectGlobal} from 'https://cdn.skypack.dev/@emotion/css?min'
-import * as process from "/~/process"
+import * as process from '/~/process'
 
 const targetURI = 
   // 'https://www.youtube.com/watch?v=XVYqWcbPAUk'
@@ -162,10 +162,10 @@ const download = async (uri, index, updateFunc, checkAbortFunc, windowsHide) => 
 
   const res = await fetch(uri)
 
-  const fs = await import("/~/fs")
-  const path = await import("/~/path")
-  const {execFile} = await import("/~/child_process")
-  const util = await import("/~/util")
+  const fs = await import('/~/fs')
+  const path = await import('/~/path')
+  const {execFile} = await import('/~/child_process')
+  const util = await import('/~/util')
   
   if (res.ok) {
     const text = await res.text()
@@ -180,7 +180,15 @@ const download = async (uri, index, updateFunc, checkAbortFunc, windowsHide) => 
     const fileName = unescapeHTML(title).replace(/\:|\?|\.|"|<|>|\||\\|\//g, '_') + ".m4a"
     updateFunc(index, {name: fileName, status: 'NOW'})
 
-    const saveName = path.join(__execPath, 'downloads', fileName)
+    let saveName
+    if (process.platform == 'win32' || process.platform == 'linux') {
+      saveName = path.join(__execPath, 'downloads', fileName)
+      await fs.mkdir(path.dirname(saveName), {recursive: true})
+    } else {
+      // darwin
+      saveName = path.join(process.env['HOME'], 'Downloads', fileName)
+    }
+  
     const tempName = path.join(path.dirname(saveName), '_tmp.' + util.CreateUUID() + '.m4a')
 
     const fileExits = await fs.stat(saveName)
@@ -188,7 +196,6 @@ const download = async (uri, index, updateFunc, checkAbortFunc, windowsHide) => 
       .catch(() => false)
 
     if (!fileExits) {
-      await fs.mkdir(path.dirname(saveName), {recursive: true})
       try {
         const options = {
           windowsHide,

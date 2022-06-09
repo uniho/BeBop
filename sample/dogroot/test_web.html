@@ -57,10 +57,18 @@
   //const URL = 'https://cef-builds.spotifycdn.com/cef_binary_102.0.9+g1c5e658+chromium-102.0.5005.63_windows64.tar.bz2'
 
   const util = await import('/~/web_util')
-  const path = await import("/~/path")
-  const fs = await import("/~/fs")
+  const path = await import('/~/path')
+  const process = await import('/~/process')
+  const fs = await import('/~/fs')
 
-  const saveName = path.join(__execPath, 'downloads', path.basename(URL))
+  let saveName
+  if (process.platform == 'win32' || process.platform == 'linux') {
+    saveName = path.join(__execPath, 'downloads', path.basename(URL))
+    await fs.mkdir(path.dirname(saveName), {recursive: true})
+  } else {
+    // darwin
+    saveName = path.join(process.env['HOME'], 'Downloads', path.basename(URL))
+  }
 
   const Test = props => {
     
@@ -70,7 +78,6 @@
     const onClick = async e => {
       if (!state.doing) {
         setState({doing: true})
-        await fs.mkdir(path.dirname(saveName), {recursive: true})
         refRequest.current = await util.downloadFile(URL, saveName)
         ;(async() => {
           let stat
