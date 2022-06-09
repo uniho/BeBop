@@ -85,12 +85,12 @@ Opens a /<fs.FileHandle>.
 * Returns: \<Promise>
 
 ### `filehandle.size()`
-* Returns: \<Promise> Fulfills with a \<integer>
+* Returns: \<Promise> Fulfills with a \<number>
 
 ### `filehandle.seek([offset][, origin])`
-* `offset` \<integer> | (ToDo:\<BigInt>) The number of bytes from origin. Default: `0`.
+* `offset` \<integer> | \<number> The number of bytes from origin. Default: `0`.
 * `origin` \<integer> `0`: From the beginning, `1`: From current position, `2`: From the end Default: `0`.
-* Returns: \<Promise> Fulfills with a \<integer> New position | `-1`.
+* Returns: \<Promise> Fulfills with a \<number> New position | `-1`.
 
 see:
   https://www.freepascal.org/docs-html/rtl/sysutils/fileseek.html

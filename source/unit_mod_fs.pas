@@ -369,7 +369,7 @@ begin
   fs.Seek(0, 0);
 
   CefResolve:= TCefValueRef.New;
-  CefResolve.SetInt(offset); // ToDo: BigInt
+  CefResolve.SetDouble(offset); // ToDo: BigInt
 end;
 
 
@@ -394,6 +394,8 @@ begin
   if Args.GetSize > 0 then begin
     if Args.GetType(0) = VTYPE_INT then begin
       offset:= Args.GetInt(0);
+    end else if Args.GetType(0) = VTYPE_DOUBLE then begin
+      offset:= Trunc(Args.GetDouble(0));
     end else begin
       // ToDo: BigInt
     end;
@@ -405,7 +407,7 @@ begin
   end;
 
   CefResolve:= TCefValueRef.New;
-  CefResolve.SetInt(fs.Seek(offset, origin)); // ToDo: BigInt
+  CefResolve.SetDouble(fs.Seek(offset, origin)); // ToDo: BigInt
 end;
 
 
