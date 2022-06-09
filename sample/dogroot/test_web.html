@@ -79,21 +79,19 @@
       if (!state.doing) {
         setState({doing: true})
         refRequest.current = await util.downloadFile(URL, saveName)
-        ;(async() => {
-          let stat
-          while (1) {
-            stat = await refRequest.current.read()
-            if (stat.finished) break
-            setState({
-              doing: true,
-              curBytes: stat.curBytes, totalBytes: stat.totalBytes
-            })
-          }
+        let stat
+        while (1) {
+          stat = await refRequest.current.read()
+          if (stat.finished) break
           setState({
-            doing: false,
+            doing: true,
             curBytes: stat.curBytes, totalBytes: stat.totalBytes
           })
-        })()
+        }
+        setState({
+          doing: false,
+          curBytes: stat.curBytes, totalBytes: stat.totalBytes
+        })
       } else {
         refRequest.current.cancel()
       }
