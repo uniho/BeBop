@@ -10,7 +10,7 @@ uses
 implementation
 
 uses
-  unit_global, LazFileUtils, unit_js, unit_thread,
+  unit_global, fileutil, LazFileUtils, unit_js, unit_thread,
   uCEFTypes, uCEFInterfaces, uCEFConstants, uCEFv8Context, uCEFv8Value, uCEFValue,
   uCEFListValue, uCefDictionaryValue, uCefBinaryValue, uCefv8ArrayBufferReleaseCallback;
 
@@ -49,6 +49,10 @@ begin
   handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'rename');
   Result.SetValueByKey('rename',
    TCefv8ValueRef.NewFunction('rename', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'cp');
+  Result.SetValueByKey('cp',
+   TCefv8ValueRef.NewFunction('cp', handler), V8_PROPERTY_ATTRIBUTE_NONE);
 
   handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'rm');
   Result.SetValueByKey('rm',
@@ -91,6 +95,10 @@ begin
   handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'rename');
   retval.SetValueByKey('rename',
    TCefv8ValueRef.NewFunction('rename', handler), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'cp');
+  retval.SetValueByKey('cp',
+   TCefv8ValueRef.NewFunction('cp', handler), V8_PROPERTY_ATTRIBUTE_NONE);
 
   handler:= TV8HandlerSafe.Create(UTF8Encode(name), 'rm');
   retval.SetValueByKey('rm',
@@ -185,6 +193,14 @@ type
   public
   end;
 
+  { TCpThread }
+
+  TCpThread = class(TPromiseThread)
+  protected
+    procedure ExecuteAct; override;
+  public
+  end;
+
   { TRmThread }
 
   TRmThread = class(TPromiseThread)
@@ -266,6 +282,7 @@ var
 begin
   Result:= False;
   case handler.FuncName of
+    'cp',
     'filehandle.close',
     'filehandle.read',
     'filehandle.write',
@@ -301,6 +318,9 @@ begin
   // (resolve, reject) => {...}
   Result:= False;
   case FuncName of
+    'cp': begin
+      StartPromiseThread(TCpThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
+    end;
     'filehandle.close': begin
       StartPromiseThread(TCloseThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
     end;
@@ -686,6 +706,79 @@ begin
 end;
 
 
+{ TCpThread }
+
+procedure TCpThread.ExecuteAct;
+
+  function RealCopy(const src, dst: string): boolean;
+  begin
+    Result:= CopyFile(src, dst, [cffOverwriteFile, cffCreateDestDirectory, cffPreserveTime]);
+  end;
+
+  function copy(const src, dst: string; recursive: boolean = false): boolean;
+  var
+    searchRec: TSearchRec;
+    s, srcDir, dstDir: string;
+  begin
+    Result:= false;
+    if FileExists(src) then begin
+      s:= dst;
+      if ExtractFileName(s) = '' then s:= IncludeTrailingPathDelimiter(s) + ExtractFileName(src);
+      Result:= RealCopy(src, s);
+      exit;
+    end else begin
+      srcDir:= IncludeTrailingPathDelimiter(src);
+      dstDir:= IncludeTrailingPathDelimiter(dst);
+      if FindFirst(srcDir + '*', faAnyFile, searchRec) = 0 then begin
+        Result:= true;
+        try
+          repeat
+            if not ((searchRec.Name = '..') or (searchRec.Name = '.')) then begin
+              if (searchRec.Attr and faDirectory <> 0) then begin
+                if recursive then begin
+                  s:= IncludeTrailingPathDelimiter(searchRec.Name);
+                  if not DirectoryExists(dstDir+s) then ForceDirectories(dstDir+s);
+                  Result:= copy(srcDir+s, dstDir+s, recursive);
+                  if not Result then exit;
+                end;
+              end else begin
+                Result:= copy(srcDir+searchRec.Name, dstDir+searchRec.Name);
+                if not Result then exit;
+              end;
+            end;
+          until (FindNext(searchRec) <> 0) or Terminated;
+        finally
+          FindClose(searchRec);
+        end;
+      end;
+    end;
+  end;
+
+var
+  src, dst: string;
+  option: ICefDictionaryValue;
+  b: boolean;
+begin
+  if Args.GetSize < 2 then Raise Exception.Create(ERROR_INVALID_PARAM_COUNT);
+  src:= UTF8Encode(Args.GetString(0));
+  if src = '' then src:= '.';
+  src:= CreateAbsolutePath(src, dogRoot);
+  dst:= UTF8Encode(Args.GetString(1));
+  if dst = '' then dst:= '.';
+  dst:= CreateAbsolutePath(dst, dogRoot);
+  b:= src <> dst;
+  if b then begin
+    option:= nil;
+    if Args.GetSize > 2 then begin
+      option:= Args.GetDictionary(2);
+    end;
+    b:= not Terminated and copy(src, dst, Assigned(option) and option.GetBool('recursive'));
+  end;
+  CefResolve:= TCefValueRef.New;
+  CefResolve.SetBool(b);
+end;
+
+
 { TRmThread }
 
 procedure TRmThread.ExecuteAct;
@@ -877,6 +970,7 @@ const
      'export const open=' + _import + '.open;' +
      'export const readdir=' + _import + '.readdir;' +
      'export const rename=' + _import + '.rename;' +
+     'export const cp=' + _import + '.cp;' +
      'export const rm=' + _import + '.rm;' +
      'export const stat=' + _import + '.stat;' +
      'export const readFile=' + _import + '.readFile;' +
@@ -897,6 +991,7 @@ initialization
   AddPromiseThreadClass(MODULE_NAME, TReadFileThread);
   AddPromiseThreadClass(MODULE_NAME, TReaddirThread);
   AddPromiseThreadClass(MODULE_NAME, TRenameThread);
+  AddPromiseThreadClass(MODULE_NAME, TCpThread);
   AddPromiseThreadClass(MODULE_NAME, TRmThread);
   AddPromiseThreadClass(MODULE_NAME, TSizeThread);
   AddPromiseThreadClass(MODULE_NAME, TSeekThread);

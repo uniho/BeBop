@@ -2,9 +2,10 @@
 
 * 🚀 Launch BeBop for MacOS!
 * Add icon.
-* [bebop Module] Add `mainform.setBounds()`.
-* [Child process Module] Add `dir` option.
-* [Child process Module] Add `env` option.
+* [bebop module] Add `mainform.setBounds()`.
+* [fs module] Add `fs.cp()`.
+* [child_process module] Add `dir` option.
+* [child_process module] Add `env` option.
 * Add web_util module.
 * Set `require()` deprecated.
   Please use [`import statement`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import) instead.  

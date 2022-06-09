@@ -2,6 +2,15 @@
 
 ## fs ~ File System Module
 
+### `fs.cp(src, dst[, options])`
+* `src` \<string> source path to copy.
+* `dst` \<string> destination path to copy to.
+* `options` \<Object>
+  * `recursive` \<boolean> If true, copy directories recursively. Default: false.
+* Returns: \<Promise>
+
+Copy the entire directory structure from src to dest, including subdirectories and files.
+
 ### `fs.readFile(file[, options])`
 * `file` \<string> The name of a file to read.
 * `options` \<Object>
