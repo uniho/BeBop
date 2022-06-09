@@ -118,6 +118,13 @@ type
     procedure ExecuteAct; override;
   end;
 
+  { TCancelThread }
+
+  TCancelThread = class(TPromiseThread)
+  protected
+    procedure ExecuteAct; override;
+  end;
+
   { TIsRunningThread }
 
   TIsRunningThread = class(TPromiseThread)
@@ -130,6 +137,7 @@ type
   TProcessObject = class(TObject)
   public
     process: TProcess;
+    canceled: boolean;
     constructor Create(aprocess: TProcess);
     destructor Destroy; override;
   end;
@@ -163,6 +171,7 @@ begin
   case handler.FuncName of
     'subprocess.read',
     'subprocess.close',
+    'subprocess.cancel',
     'subprocess.isRunning',
     'execFile': begin
       // res = (arg, ...) => new Promise(resolve => {...})
@@ -196,6 +205,9 @@ begin
     end;
     'subprocess.close': begin
       StartPromiseThread(TCloseThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
+    end;
+    'subprocess.cancel': begin
+      StartPromiseThread(TCancelThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
     end;
     'subprocess.isRunning': begin
       StartPromiseThread(TIsRunningThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
@@ -292,27 +304,33 @@ begin
 
   func:= TCefDictionaryValueRef.New;
   func.SetBool(VTYPE_FUNCTION_NAME, true);
-  func.SetString('ModuleName', 'child_process');
+  func.SetString('ModuleName', MODULE_NAME);
   func.SetString('FuncName', 'subprocess.read');
   dic.SetDictionary('read', func);
 
   func:= TCefDictionaryValueRef.New;
   func.SetBool(VTYPE_FUNCTION_NAME, true);
-  func.SetString('ModuleName', 'child_process');
+  func.SetString('ModuleName', MODULE_NAME);
   func.SetString('FuncName', 'subprocess.close');
   dic.SetDictionary('close', func);
+
+  func:= TCefDictionaryValueRef.New;
+  func.SetBool(VTYPE_FUNCTION_NAME, true);
+  func.SetString('ModuleName', MODULE_NAME);
+  func.SetString('FuncName', 'subprocess.cancel');
+  dic.SetDictionary('cancel', func);
 
   {$IFDEF CEF_SINGLE_PROCESS}
   func:= TCefDictionaryValueRef.New;
   func.SetBool(VTYPE_FUNCTION_NAME, true);
-  func.SetString('ModuleName', 'child_process');
+  func.SetString('ModuleName', MODULE_NAME);
   func.SetString('FuncName', 'subprocess.closeSync');
   dic.SetDictionary('closeSync', func);
   {$ENDIF}
 
   func:= TCefDictionaryValueRef.New;
   func.SetBool(VTYPE_FUNCTION_NAME, true);
-  func.SetString('ModuleName', 'child_process');
+  func.SetString('ModuleName', MODULE_NAME);
   func.SetString('FuncName', 'subprocess.isRunning');
   dic.SetDictionary('isRunning', func);
 
@@ -326,11 +344,11 @@ procedure TReadThread.ExecuteAct;
 var
   OutputString, StdErrString: string;
   obj: TObject;
-  pro: TProcess;
+  pro: TProcessObject;
   anExitStatus, len: integer;
   option, dic: ICefDictionaryValue;
   wait, waitc: integer;
-  available1, available2: boolean;
+  available1, available2, proFinished: boolean;
 begin
   dic:= CefObject.GetDictionary;
   if not Assigned(dic) or not dic.IsValid then
@@ -338,11 +356,12 @@ begin
   obj:= GetObjectList(UTF8Encode(dic.GetString(VTYPE_OBJECT_NAME)));
   if not Assigned(obj) or not(obj is TProcessObject) then
     Raise Exception.Create(ERROR_INVALID_HANDLE_VALUE);
-  pro:= TProcessObject(obj).process;
+  pro:= TProcessObject(obj);
 
   OutputString:= '';
   StdErrString:= '';
   anExitStatus:= 0;
+  proFinished:= false;
   try
     option:= nil;
     wait:= 1000;
@@ -354,19 +373,19 @@ begin
     end;
     if wait < 100 then wait:= 100;
 
-    if not Self.Terminated and (poUsePipes in pro.Options) then begin
-      if pro.Running then begin
+    if not Self.Terminated and (poUsePipes in pro.process.Options) then begin
+      if pro.process.Running then begin
         // Only call ReadFromStream if Data from corresponding stream
         // is already available, otherwise, on  linux, the read call
         // is blocking, and thus it is not possible to be sure to handle
         // big data amounts bboth on output and stderr pipes. PM.
-        len:= pro.output.NumBytesAvailable;
+        len:= pro.process.output.NumBytesAvailable;
         available1:= len > 0;
         if available1 then begin
           //available1:= pro.ReadInputStream(pro.output,BytesRead,OutputLength,OutputString,1);
           try
             SetLength(OutputString, len);
-            len:= pro.output.Read(OutputString[1], len);
+            len:= pro.process.output.Read(OutputString[1], len);
             SetLength(OutputString, len);
           except
             OutputString:= '';
@@ -375,13 +394,13 @@ begin
 
         // The check for assigned(P.stderr) is mainly here so that
         // if we use poStderrToOutput in p.Options, we do not access invalid memory.
-        available2:= not Self.Terminated and assigned(pro.stderr) and (pro.stderr.NumBytesAvailable > 0);
+        available2:= not Self.Terminated and assigned(pro.process.stderr) and (pro.process.stderr.NumBytesAvailable > 0);
         if available2 then begin
           //  available2:= pro.ReadInputStream(pro.StdErr,StdErrBytesRead,StdErrLength,StdErrString,1);
           try
-            len:= pro.stderr.NumBytesAvailable;
+            len:= pro.process.stderr.NumBytesAvailable;
             SetLength(StdErrString, len);
-            len:= pro.stderr.Read(StdErrString[1], len);
+            len:= pro.process.stderr.Read(StdErrString[1], len);
             SetLength(StdErrString, len);
           except
             StdErrString:= '';
@@ -397,25 +416,26 @@ begin
         end;
 
       end else begin
-        anExitStatus:= pro.exitstatus;
+        anExitStatus:= pro.process.exitstatus;
+        proFinished:= true;
         // Get left output after end of execution
         //pro.ReadInputStream(pro.output,BytesRead,OutputLength,OutputString,1);
-        len:= pro.output.NumBytesAvailable;
+        len:= pro.process.output.NumBytesAvailable;
         if len > 0 then begin
           try
             SetLength(OutputString, len);
-            len:= pro.output.Read(OutputString[1], len);
+            len:= pro.process.output.Read(OutputString[1], len);
             SetLength(OutputString, len);
           except
             OutputString:= '';
           end;
         end;
-        if assigned(pro.stderr) and not Self.Terminated and (pro.stderr.NumBytesAvailable > 0) then begin
+        if assigned(pro.process.stderr) and not Self.Terminated and (pro.process.stderr.NumBytesAvailable > 0) then begin
           //pro.ReadInputStream(pro.StdErr,StdErrBytesRead,StdErrLength,StdErrString,1);
           try
-            len:= pro.stderr.NumBytesAvailable;
+            len:= pro.process.stderr.NumBytesAvailable;
             SetLength(StdErrString, len);
-            len:= pro.stderr.Read(StdErrString[1], len);
+            len:= pro.process.stderr.Read(StdErrString[1], len);
             SetLength(StdErrString, len);
           except
             StdErrString:= '';
@@ -429,6 +449,8 @@ begin
     dic.SetString('stdout', UTF8Decode(OutputString));
     dic.SetString('stderr', UTF8Decode(StdErrString));
     dic.SetInt('status', anExitStatus);
+    dic.SetBool('canceled', pro.canceled);
+    dic.SetBool('finished', proFinished);
     CefResolve:= TCefValueRef.New;
     CefResolve.SetDictionary(dic);
   end;
@@ -469,6 +491,33 @@ begin
   CefResolve.SetBool(True);
 end;
 
+{ TCancelThread }
+
+procedure TCancelThread.ExecuteAct;
+var
+  obj: TObject;
+  pro: TProcessObject;
+  dic: ICefDictionaryValue;
+  uuid: string;
+begin
+  dic:= CefObject.GetDictionary;
+  if not Assigned(dic) or not dic.IsValid then
+    Raise Exception.Create(ERROR_INVALID_HANDLE_VALUE);
+  uuid:= UTF8Encode(dic.GetString(VTYPE_OBJECT_NAME));
+  obj:= GetObjectList(uuid);
+  if not Assigned(obj) or not(obj is TProcessObject) then
+    Raise Exception.Create(ERROR_INVALID_HANDLE_VALUE);
+  pro:= TProcessObject(obj);
+
+  pro.process.Terminate(0);
+  pro.process.WaitOnExit;
+  //while pro.process.Running do Sleep(1);
+  pro.canceled:= true;
+
+  CefResolve:= TCefValueRef.New;
+  CefResolve.SetBool(True);
+end;
+
 { TIsRunningThread }
 
 procedure TIsRunningThread.ExecuteAct;
@@ -499,6 +548,7 @@ end;
 constructor TProcessObject.Create(aprocess: TProcess);
 begin
   process:= aprocess;
+  canceled:= false;
 end;
 
 destructor TProcessObject.Destroy;
@@ -527,6 +577,7 @@ initialization
   AddPromiseThreadClass(MODULE_NAME, TExecFileThread);
   AddPromiseThreadClass(MODULE_NAME, TReadThread);
   AddPromiseThreadClass(MODULE_NAME, TCloseThread);
+  AddPromiseThreadClass(MODULE_NAME, TCancelThread);
   AddPromiseThreadClass(MODULE_NAME, TIsRunningThread);
 end.
 

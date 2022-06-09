@@ -22,7 +22,7 @@ https://wiki.lazarus.freepascal.org/Executing_External_Programs
 ### `subprocess.read([options])`
 * `options` \<Object>
   * `wait` \<integer> Default: `1000`
-* Returns: \<Promise> Fulfills with a \<object> which has `stdout` \<string>, `stderr` \<string>, and `status` \<integer>.
+* Returns: \<Promise> Fulfills with a \<object> which has `stdout` \<string>, `stderr` \<string>, `status` \<integer>, `canceled` \<bool>, and `finished` \<bool>.
 
 Read stdout and stderr from the pipe of the subprocess.
 
@@ -30,6 +30,11 @@ Read stdout and stderr from the pipe of the subprocess.
 * Returns: \<Promise> Fulfills with a \<boolean> .
 
 Check the subprocess is running.
+
+### `subprocess.cancel()`
+* Returns: \<Promise>.
+
+Cancel the subprocess.
 
 ### `subprocess.close()`
 * Returns: \<Promise>.
