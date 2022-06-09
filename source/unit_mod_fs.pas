@@ -783,37 +783,46 @@ end;
 
 procedure TRmThread.ExecuteAct;
 
-  function remove(const fileName: string; recursive: boolean): boolean;
+  function RealRemoveFile(const src: string): boolean;
+  begin
+    Result:= DeleteFile(src);
+  end;
+
+  function RealRemoveDir(const src: string): boolean;
+  begin
+    Result:= RemoveDir(src);
+  end;
+
+  function remove(const fileName: string; recursive: boolean = false): boolean;
   var
     searchRec: TSearchRec;
   begin
     Result:= False;
     if FileExists(fileName) then begin
-      Result:= DeleteFile(fileName);
+      Result:= RealRemoveFile(fileName);
       exit;
-    end else if (DirectoryExists(fileName)) then begin
-      if not recursive then begin
-        Result:= RemoveDir(fileName);
-        exit;
-      end;
+    end else begin
       if FindFirst(IncludeTrailingPathDelimiter(fileName) + '*', faAnyFile, searchRec) = 0 then begin
+        Result:= true;
         try
-          repeat
-            if not ((searchRec.Name = '..') or (searchRec.Name = '.')) then begin
-              if (searchRec.Attr and faDirectory <> 0) then begin
-                Result:= remove(IncludeTrailingPathDelimiter(fileName)+searchRec.Name, true);
-                if not Result then exit;
-              end else begin
-                Result:= DeleteFile(IncludeTrailingPathDelimiter(fileName)+searchRec.Name);
-                if not Result then exit;
+          if recursive then begin
+            repeat
+              if not ((searchRec.Name = '..') or (searchRec.Name = '.')) then begin
+                if (searchRec.Attr and faDirectory <> 0) then begin
+                  Result:= remove(IncludeTrailingPathDelimiter(fileName)+searchRec.Name, true);
+                  if not Result then exit;
+                end else begin
+                  Result:= remove(IncludeTrailingPathDelimiter(fileName)+searchRec.Name);
+                  if not Result then exit;
+                end;
               end;
-            end;
-          until (FindNext(searchRec) <> 0) or Terminated;
+            until (FindNext(searchRec) <> 0) or Terminated;
+          end;
         finally
           FindClose(searchRec);
         end;
+        Result:= RealRemoveDir(fileName);
       end;
-      Result:= RemoveDir(fileName);
     end;
   end;
 
