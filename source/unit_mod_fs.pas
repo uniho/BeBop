@@ -201,6 +201,20 @@ type
   public
   end;
 
+  TCpReadThread = class(TPromiseThread)
+  protected
+    procedure ExecuteAct; override;
+  public
+  end;
+
+  { TCpCancelThread }
+
+  TCpCancelThread = class(TPromiseThread)
+  protected
+    procedure ExecuteAct; override;
+  public
+  end;
+
   { TRmThread }
 
   TRmThread = class(TPromiseThread)
@@ -283,6 +297,8 @@ begin
   Result:= False;
   case handler.FuncName of
     'cp',
+    'cp.read',
+    'cp.cancel',
     'filehandle.close',
     'filehandle.read',
     'filehandle.write',
@@ -320,6 +336,12 @@ begin
   case FuncName of
     'cp': begin
       StartPromiseThread(TCpThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
+    end;
+    'cp.read': begin
+      StartPromiseThread(TCpReadThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
+    end;
+    'cp.cancel': begin
+      StartPromiseThread(TCpCancelThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
     end;
     'filehandle.close': begin
       StartPromiseThread(TCloseThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
@@ -706,13 +728,67 @@ begin
 end;
 
 
-{ TCpThread }
+// fs.cp()
 
-procedure TCpThread.ExecuteAct;
+type
+
+  { TRealCpThread }
+
+  TRealCpThread = class(TThread)
+  private
+    srcTarget, dstTarget: string;
+    optRecursive, optPreparation: boolean;
+    FCanceled, FComplete: boolean;
+    FFileName, FError, argString: string;
+    FCount, FSize, argInt64: int64;
+    procedure syncError;
+    procedure syncComplete;
+    procedure syncCancel;
+    procedure syncFileName;
+    procedure syncCount;
+    procedure syncSize;
+  protected
+    procedure Execute; override;
+  public
+    constructor Create(const src, dst: string; option: ICefDictionaryValue);
+    procedure cancel;
+    property canceled: boolean read FCanceled;
+    property complete: boolean read FComplete;
+    property error: string read FError;
+    property fileName: string read FFileName;
+    property count: int64 read FCount;
+    property size: int64 read FSize;
+  end;
+
+{ TRealCpThread }
+
+constructor TRealCpThread.Create(const src, dst: string; option: ICefDictionaryValue);
+begin
+  srcTarget:= src;
+  dstTarget:= dst;
+  optRecursive:= Assigned(option) and option.HasKey('recursive') and option.GetBool('recursive');
+  optPreparation:= (dst = '') or (Assigned(option) and option.HasKey('preparation') and option.GetBool('preparation'));
+  FreeOnTerminate:= false;
+  inherited Create(false);
+end;
+
+procedure TRealCpThread.Execute;
+
+  function RealCreateDir(const dir: string): boolean;
+  begin
+    Result:= optPreparation or ForceDirectories(dir);
+  end;
 
   function RealCopy(const src, dst: string): boolean;
   begin
-    Result:= CopyFile(src, dst, [cffOverwriteFile, cffCreateDestDirectory, cffPreserveTime]);
+    argString:= src;
+    Synchronize(@syncFileName);
+    argInt64:= FCount + 1;
+    Synchronize(@syncCount);
+    //if not DirectoryExists(dst) then RealCreateDir(dst);
+    Result:= optPreparation or CopyFile(src, dst, [cffOverwriteFile, cffCreateDestDirectory, cffPreserveTime]);
+    argInt64:= FSize + FileSize(src);
+    Synchronize(@syncSize);
   end;
 
   function copy(const src, dst: string; recursive: boolean = false): boolean;
@@ -733,11 +809,12 @@ procedure TCpThread.ExecuteAct;
         Result:= true;
         try
           repeat
+            if Terminated then Break;
             if not ((searchRec.Name = '..') or (searchRec.Name = '.')) then begin
               if (searchRec.Attr and faDirectory <> 0) then begin
                 if recursive then begin
                   s:= IncludeTrailingPathDelimiter(searchRec.Name);
-                  if not DirectoryExists(dstDir+s) then ForceDirectories(dstDir+s);
+                  if not DirectoryExists(dstDir+s) then RealCreateDir(dstDir+s);
                   Result:= copy(srcDir+s, dstDir+s, recursive);
                   if not Result then exit;
                 end;
@@ -754,28 +831,167 @@ procedure TCpThread.ExecuteAct;
     end;
   end;
 
+begin
+  if srcTarget = dstTarget then begin
+    argString:= 'Same Targets';
+    Synchronize(@syncError);
+    Exit;
+  end;
+
+  copy(srcTarget, dstTarget, optRecursive);
+  if not Terminated then Synchronize(@syncComplete);
+end;
+
+procedure TRealCpThread.syncError;
+begin
+  FError:= argString;
+end;
+
+procedure TRealCpThread.syncComplete;
+begin
+  FComplete:= true;
+end;
+
+procedure TRealCpThread.syncCancel;
+begin
+  FCanceled:= true;
+end;
+
+procedure TRealCpThread.syncFileName;
+begin
+  FFileName:= argString;
+end;
+
+procedure TRealCpThread.syncCount;
+begin
+  FCount:= argInt64;
+end;
+
+procedure TRealCpThread.syncSize;
+begin
+  FSize:= argInt64;
+end;
+
+procedure TRealCpThread.cancel;
+begin
+  Synchronize(@syncCancel);
+  Terminate;
+end;
+
+{ TCpThread }
+
+procedure TCpThread.ExecuteAct;
 var
   src, dst: string;
-  option: ICefDictionaryValue;
-  b: boolean;
+  thread: TRealCpThread;
+  option, dic, func: ICefDictionaryValue;
 begin
   if Args.GetSize < 2 then Raise Exception.Create(ERROR_INVALID_PARAM_COUNT);
   src:= UTF8Encode(Args.GetString(0));
   if src = '' then src:= '.';
   src:= CreateAbsolutePath(src, dogRoot);
-  dst:= UTF8Encode(Args.GetString(1));
-  if dst = '' then dst:= '.';
-  dst:= CreateAbsolutePath(dst, dogRoot);
-  b:= src <> dst;
-  if b then begin
-    option:= nil;
-    if Args.GetSize > 2 then begin
-      option:= Args.GetDictionary(2);
-    end;
-    b:= not Terminated and copy(src, dst, Assigned(option) and option.GetBool('recursive'));
+
+  dst:= '';
+  if Args.GetType(1) = VTYPE_STRING then begin
+    dst:= UTF8Encode(Args.GetString(1));
+    if dst <> '' then dst:= CreateAbsolutePath(dst, dogRoot);
   end;
+
+  option:= nil;
+  if Args.GetSize > 2 then begin
+    option:= Args.GetDictionary(2);
+  end;
+
+  thread:= TRealCpThread.Create(src, dst, option);
+  if not Assigned(option) or not option.GetBool('progressive') then begin
+    thread.WaitFor;
+  end;
+
+  dic:= NewUserObject(thread);
+  func:= TCefDictionaryValueRef.New;
+  func.SetBool(VTYPE_FUNCTION_NAME, true);
+  func.SetString('ModuleName', MODULE_NAME);
+  func.SetString('FuncName', 'cp.read');
+  dic.SetDictionary('read', func);
+
+  func:= TCefDictionaryValueRef.New;
+  func.SetBool(VTYPE_FUNCTION_NAME, true);
+  func.SetString('ModuleName', MODULE_NAME);
+  func.SetString('FuncName', 'cp.cancel');
+  dic.SetDictionary('cancel', func);
+
   CefResolve:= TCefValueRef.New;
-  CefResolve.SetBool(b);
+  CefResolve.SetDictionary(dic);
+end;
+
+{ TCpReadThread }
+
+procedure TCpReadThread.ExecuteAct;
+var
+  obj: TObject;
+  thread: TRealCpThread;
+  option, dic: ICefDictionaryValue;
+  wait, waitc: integer;
+begin
+  dic:= CefObject.GetDictionary;
+  if not Assigned(dic) or not dic.IsValid then
+    Raise Exception.Create(ERROR_INVALID_HANDLE_VALUE);
+  obj:= GetObjectList(UTF8Encode(dic.GetString(VTYPE_OBJECT_NAME)));
+  if not Assigned(obj) or not(obj is TRealCpThread) then
+    Raise Exception.Create(ERROR_INVALID_HANDLE_VALUE);
+  thread:= TRealCpThread(obj);
+
+  try
+    option:= nil;
+    wait:= 1000;
+    if (Args.GetSize > 0) then begin
+      option:= Args.GetDictionary(0);
+      if option.HasKey('wait') then begin
+        wait:= option.GetInt('wait');
+      end;
+    end;
+    if wait < 100 then wait:= 100;
+
+    waitc:= wait div 100;
+    while not Self.Terminated and not thread.Finished and (waitc > 0) do begin
+      Sleep(100);
+      Dec(waitc);
+    end;
+
+  finally
+    dic:= TCefDictionaryValueRef.New;
+    dic.SetBool('complete', thread.complete);
+    dic.SetBool('canceled', thread.canceled);
+    dic.SetBool('finished', thread.Finished);
+    dic.SetString('file', UTF8Decode(thread.fileName));
+    dic.SetDouble('count', thread.count);
+    dic.SetDouble('size', thread.size);
+    dic.SetString('error', UTF8Decode(thread.error));
+    CefResolve:= TCefValueRef.New;
+    CefResolve.SetDictionary(dic);
+  end;
+end;
+
+{ TCpCancelThread }
+
+procedure TCpCancelThread.ExecuteAct;
+var
+  obj: TObject;
+  thread: TRealCpThread;
+  dic: ICefDictionaryValue;
+begin
+  dic:= CefObject.GetDictionary;
+  if not Assigned(dic) or not dic.IsValid then
+    Raise Exception.Create(ERROR_INVALID_HANDLE_VALUE);
+  obj:= GetObjectList(UTF8Encode(dic.GetString(VTYPE_OBJECT_NAME)));
+  if not Assigned(obj) or not(obj is TRealCpThread) then
+    Raise Exception.Create(ERROR_INVALID_HANDLE_VALUE);
+
+  thread:= TRealCpThread(obj);
+  thread.cancel;
+
+  CefResolve:= TCefValueRef.New;
+  CefResolve.SetBool(true);
 end;
 
 
@@ -1001,6 +1217,8 @@ initialization
   AddPromiseThreadClass(MODULE_NAME, TReaddirThread);
   AddPromiseThreadClass(MODULE_NAME, TRenameThread);
   AddPromiseThreadClass(MODULE_NAME, TCpThread);
+  AddPromiseThreadClass(MODULE_NAME, TCpReadThread);
+  AddPromiseThreadClass(MODULE_NAME, TCpCancelThread);
   AddPromiseThreadClass(MODULE_NAME, TRmThread);
   AddPromiseThreadClass(MODULE_NAME, TSizeThread);
   AddPromiseThreadClass(MODULE_NAME, TSeekThread);
