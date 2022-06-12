@@ -236,17 +236,6 @@ function safeExecute(const handler: TV8HandlerSafe; const name: ustring;
     Result:= Format(s, param, settings);
   end;
 
-  // This is just a sample. It's bother or no value to process on native code.
-  function unescapeHtmlSync: ICefv8Value;
-  begin
-    // see https://javascript.info/new-function
-    Result:= NewFunctionV8(
-      'const escapeEl = window.document.createElement("textarea");' +
-      'escapeEl.innerHTML = args[0];' +
-      'return escapeEl.textContent;'
-      , arguments);
-  end;
-
 //
 var
   v1, v2: ICefv8Value;
