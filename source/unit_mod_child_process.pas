@@ -269,8 +269,8 @@ begin
 
   pro.Options:= pro.Options + [poNoConsole, poUsePipes];
   if Assigned(option) then begin
-    if option.HasKey('dir') then begin
-      pro.CurrentDirectory:= UTF8Encode(option.GetString('dir'));
+    if option.HasKey('cwd') then begin
+      pro.CurrentDirectory:= UTF8Encode(option.GetString('cwd'));
     end;
 
     if option.HasKey('env') then begin
