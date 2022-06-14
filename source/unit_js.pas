@@ -88,7 +88,7 @@ function Cefv8ArrayToCefList(v8: TCefv8ValueArray): ICefListValue;
 function NewV8Object(parent: ICefv8Value; const args: TCefv8ValueArray): ICefv8Value;
 function NewV8Promise(const name: ustring; handler: ICefv8Handler): ICefv8Value;
 procedure NewFunction(const code: string; args: ICefListValue = nil; const uid: string = ''); // DEPRECATED
-function NewFunctionRe(const code: string; args: ICefListValue; const uid: string): ICefValue;
+function NewFunctionRe(const code: string; args: ICefListValue = nil; const uid: string = ''): ICefValue;
 function NewFunctionV8(const code: string; args: TCefv8ValueArray): ICefv8Value;
 function NewUserObject(obj: TObject): ICefDictionaryValue;
 function NewUserObjectV8(obj: TObject): ICefv8Value;
