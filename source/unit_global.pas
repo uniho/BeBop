@@ -33,6 +33,7 @@ type
     destructor Destroy; override;
     function AddObject(const S: string; AObject: TObject): Integer;
     function GetObject(const S: string): TObject;
+    function SetObject(const S: string; AObject: TObject): Integer;
     function RemoveObject(const S: string): boolean;
   end;
 
@@ -116,6 +117,21 @@ begin
   //finally
   //  LeaveCriticalSection(FCriticalSection);
   //end;
+end;
+
+function TSafeStringList.SetObject(const S: string; AObject: TObject): Integer;
+begin
+  EnterCriticalSection(FCriticalSection);
+  try
+    Result:= FStringList.IndexOf(S);
+    if Result < 0 then begin
+      Result:= AddObject(S, AObject);
+      Exit;
+    end;
+    FStringList.Objects[Result]:= AObject;
+  finally
+    LeaveCriticalSection(FCriticalSection);
+  end;
 end;
 
 function TSafeStringList.RemoveObject(const S: string): boolean;

@@ -556,12 +556,23 @@ procedure TForm1.ChromiumProcessMessageReceived(Sender: TObject;
     thread.Start;
   end;
 
+  //
+  procedure new_function_re;
+  var
+    obj: TInterfaceObject;
+  begin
+    obj:= TInterfaceObject.Create;
+    obj.cefBaseRefCounted:= message.ArgumentList.GetValue(1);
+    SetObjectList(UTF8Encode(message.ArgumentList.GetString(0)), obj);
+  end;
+
 //
 begin
   Result:= False;
   case message.name of
     'context_created': context_created;
     'promise_thread_start': promise_thread_start;
+    'new_function_re': new_function_re;
   end;
   Result:= True;
 end;

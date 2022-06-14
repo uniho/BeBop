@@ -58,6 +58,14 @@ type
     procedure callback(obj: TObject);
   end;
 
+  { TInterfaceObject }
+
+  TInterfaceObject = class
+  public
+    cefBaseRefCounted: ICefBaseRefCounted;
+    destructor Destroy; override;
+  end;
+
   //{ ICefUserDataObject }
   //
   //ICefUserDataObject = interface(ICefv8Value)
@@ -88,6 +96,7 @@ procedure AddModuleHandler(const name, body: string; creater: TImportCreate; saf
 function AddObjectList(obj: TObject): string;
 procedure AddObjectListUUID(const uuid: string; obj: TObject);
 function GetObjectList(const uuid: string): TObject;
+procedure SetObjectList(const uuid: string; obj: TObject);
 procedure RemoveObjectList(const uuid: string);
 procedure RemoveObjectListResult(const uuid: string; result: TTaskResult);
 function StringPasToJS(const str: string): string;
@@ -97,7 +106,8 @@ function Cefv8ValueToCefValue(v8: ICefv8Value): ICefValue;
 function Cefv8ArrayToCefList(v8: TCefv8ValueArray): ICefListValue;
 function NewV8Object(parent: ICefv8Value; const args: TCefv8ValueArray): ICefv8Value;
 function NewV8Promise(const name: ustring; handler: ICefv8Handler): ICefv8Value;
-procedure NewFunction(const code: string; args: ICefListValue = nil; const uid: string = '');
+procedure NewFunction(const code: string; args: ICefListValue = nil; const uid: string = ''); // DEPRECATED
+function NewFunctionRe(const code: string; args: ICefListValue; const uid: string): ICefValue;
 function NewFunctionV8(const code: string; args: TCefv8ValueArray): ICefv8Value;
 function NewUserObject(obj: TObject): ICefDictionaryValue;
 function NewUserObjectV8(obj: TObject): ICefv8Value;
@@ -295,11 +305,138 @@ procedure ProcessMessageReceivedEvent(const browser: ICefBrowser;
   const message: ICefProcessMessage; var aHandled: boolean);
 var
   context: ICefv8Context;
-  ipc, v1, v2, g, param: ICefv8Value;
-  arr: TCefv8ValueArray;
-  us, us2: ustring;
-  sl: TStringList;
-  i, len: integer;
+
+  procedure promise;
+  var
+    ipc, v1, v2, g, param: ICefv8Value;
+    us, us2: ustring;
+    sl: TStringList;
+    i, len: integer;
+  begin
+    g:= TCefv8ContextRef.Current.GetGlobal;
+    ipc:= g.GetValueByKey(G_VAR_IN_JS_NAME).GetValueByKey('_ipc');
+    us:= message.ArgumentList.GetString(0);
+    if not Assigned(ipc) or not ipc.HasValueByKey(us) then Exit;
+    try
+      if message.ArgumentList.GetBool(1) then begin
+        v1:= ipc.GetValueByKey(us).GetValueByKey('resolve');
+        param:= CefValueToCefv8Value(message.ArgumentList.GetValue(2));
+        if ipc.GetValueByKey(us).HasValueByKey('resolve_args') then begin
+          v2:= ipc.GetValueByKey(us).GetValueByKey('resolve_args');
+          if param.IsObject and v2.IsObject then begin
+            sl:= TStringList.Create;
+            try
+              v2.GetKeys(sl);
+              len:= sl.Count;
+              for i:= 0 to len-1 do begin
+                param.SetValueByIndex(param.GetArrayLength, v2.GetValueByKey(UTF8Decode(sl[i])));
+              end;
+            finally
+              sl.Free;
+            end;
+          end else begin
+            param:= v2;
+          end;
+        end;
+      end else begin
+        v1:= ipc.GetValueByKey(us).GetValueByKey('reject');
+        // e = new Error(message)
+        us2:= '';
+        if ipc.GetValueByKey(us).HasValueByKey('moduleName') then begin
+          us2:= us2 + 'in ' + ipc.GetValueByKey(us).GetValueByKey('moduleName').GetStringValue + '.';
+        end;
+        if ipc.GetValueByKey(us).HasValueByKey('funcName') then begin
+          us2:= us2 + ipc.GetValueByKey(us).GetValueByKey('funcName').GetStringValue + '(): ';
+        end;
+        v2:= TCefv8ValueRef.NewString(us2 + message.ArgumentList.GetString(2));
+        param:= NewV8Object(g.GetValueByKey('Error'), [v2]);
+      end;
+      v1.ExecuteFunction(nil, [param]);
+    finally
+      ipc.DeleteValueByKey(us);
+    end;
+  end;
+
+  // DEPRECATED
+  procedure newFunction;
+  var
+    ipc, v1, v2, g: ICefv8Value;
+    arr: TCefv8ValueArray;
+    us: ustring;
+    i, len: integer;
+  begin
+    // const F = new Function("...args", code)
+    g:= TCefv8ContextRef.Current.GetGlobal;
+    v1:= newV8Object(g.GetValueByKey('Function'),
+      [TCefv8ValueRef.NewString('...args'), CefValueToCefv8Value(message.ArgumentList.GetValue(1))]);
+    // result = F(...args)
+    len:= message.ArgumentList.GetList(0).GetSize; // args
+    SetLength(arr{%H-}, len);
+    for i:= 0 to len-1 do begin
+      arr[i]:= CefValueToCefv8Value(message.ArgumentList.GetList(0).GetValue(i));
+    end;
+    v1:= v1.ExecuteFunction(nil, arr);
+    if message.ArgumentList.GetString(2) <> '' then begin
+      // to resolve promise
+      g:= TCefv8ContextRef.Current.GetGlobal;
+      ipc:= g.GetValueByKey(G_VAR_IN_JS_NAME).GetValueByKey('_ipc');
+      us:= message.ArgumentList.GetString(2);
+      if not Assigned(ipc) or not ipc.HasValueByKey(us) then Exit;
+      try
+        v2:= ipc.GetValueByKey(us).GetValueByKey('resolve');
+        v2.ExecuteFunction(nil, [v1]);
+      finally
+        ipc.DeleteValueByKey(us);
+      end;
+    end;
+  end;
+
+  procedure newFunctionRe;
+  var
+    ipc, v1, g, resolve, reject: ICefv8Value;
+    arr: TCefv8ValueArray;
+    us: ustring;
+    i, len: integer;
+    msg: ICefProcessMessage;
+  begin
+    // const F = new Function("resolve, reject, ...args", code)
+    g:= TCefv8ContextRef.Current.GetGlobal;
+    v1:= newV8Object(g.GetValueByKey('Function'),
+      [TCefv8ValueRef.NewString('resolve,reject,...args'), CefValueToCefv8Value(message.ArgumentList.GetValue(1))]);
+
+    // result = F(resolve, reject, ...args)
+    len:= message.ArgumentList.GetList(0).GetSize; // args
+    SetLength(arr{%H-}, len+2);
+    us:= message.ArgumentList.GetString(2);
+    ipc:= nil;
+    resolve:= nil;
+    reject:= nil;
+    if us <> '' then begin
+      // to resolve promise
+      ipc:= g.GetValueByKey(G_VAR_IN_JS_NAME).GetValueByKey('_ipc');
+      if Assigned(ipc) and ipc.HasValueByKey(us) then begin
+        resolve:= ipc.GetValueByKey(us).GetValueByKey('resolve');
+        reject:= ipc.GetValueByKey(us).GetValueByKey('reject');
+      end;
+    end;
+    arr[0]:= resolve;
+    arr[1]:= reject;
+    for i:= 0 to len-1 do begin
+      arr[i+2]:= CefValueToCefv8Value(message.ArgumentList.GetList(0).GetValue(i));
+    end;
+
+    v1:= v1.ExecuteFunction(nil, arr);
+
+    if Assigned(ipc) and ipc.HasValueByKey(us) then begin
+      ipc.DeleteValueByKey(us);
+    end;
+
+    msg:= TCefProcessMessageRef.New('new_function_re');
+    msg.ArgumentList.SetString(0, message.ArgumentList.GetString(3)); // resultId
+    msg.ArgumentList.SetValue(1, Cefv8ValueToCefValue(v1));
+    frame.SendProcessMessage(PID_BROWSER, msg);
+  end;
+
 begin
   aHandled:= True;
   context:= frame.GetV8Context;
@@ -307,79 +444,23 @@ begin
     'promise': begin
       context.Enter;
       try
-        g:= TCefv8ContextRef.Current.GetGlobal;
-        ipc:= g.GetValueByKey(G_VAR_IN_JS_NAME).GetValueByKey('_ipc');
-        us:= message.ArgumentList.GetString(0);
-        if not Assigned(ipc) or not ipc.HasValueByKey(us) then Exit;
-        try
-          if message.ArgumentList.GetBool(1) then begin
-            v1:= ipc.GetValueByKey(us).GetValueByKey('resolve');
-            param:= CefValueToCefv8Value(message.ArgumentList.GetValue(2));
-            if ipc.GetValueByKey(us).HasValueByKey('resolve_args') then begin
-              v2:= ipc.GetValueByKey(us).GetValueByKey('resolve_args');
-              if param.IsObject and v2.IsObject then begin
-                sl:= TStringList.Create;
-                try
-                  v2.GetKeys(sl);
-                  len:= sl.Count;
-                  for i:= 0 to len-1 do begin
-                    param.SetValueByIndex(param.GetArrayLength, v2.GetValueByKey(UTF8Decode(sl[i])));
-                  end;
-                finally
-                  sl.Free;
-                end;
-              end else begin
-                param:= v2;
-              end;
-            end;
-          end else begin
-            v1:= ipc.GetValueByKey(us).GetValueByKey('reject');
-            // e = new Error(message)
-            us2:= '';
-            if ipc.GetValueByKey(us).HasValueByKey('moduleName') then begin
-              us2:= us2 + 'in ' + ipc.GetValueByKey(us).GetValueByKey('moduleName').GetStringValue + '.';
-            end;
-            if ipc.GetValueByKey(us).HasValueByKey('funcName') then begin
-              us2:= us2 + ipc.GetValueByKey(us).GetValueByKey('funcName').GetStringValue + '(): ';
-            end;
-            v2:= TCefv8ValueRef.NewString(us2 + message.ArgumentList.GetString(2));
-            param:= NewV8Object(g.GetValueByKey('Error'), [v2]);
-          end;
-          v1.ExecuteFunction(nil, [param]);
-        finally
-          ipc.DeleteValueByKey(us);
-        end;
+        promise;
       finally
         context.Exit;
       end;
     end;
-    'new_function': begin
+    'new_function': begin // DEPRECATED
       context.Enter;
       try
-        // const F = new Function("...args", code)
-        g:= TCefv8ContextRef.Current.GetGlobal;
-        v1:= newV8Object(g.GetValueByKey('Function'),
-          [TCefv8ValueRef.NewString('...args'), CefValueToCefv8Value(message.ArgumentList.GetValue(1))]);
-        // result = F(...args)
-        len:= message.ArgumentList.GetList(0).GetSize; // args
-        SetLength(arr{%H-}, len);
-        for i:= 0 to len-1 do begin
-          arr[i]:= CefValueToCefv8Value(message.ArgumentList.GetList(0).GetValue(i));
-        end;
-        v1:= v1.ExecuteFunction(nil, arr);
-        if message.ArgumentList.GetString(2) <> '' then begin
-          // to resolve promise
-          g:= TCefv8ContextRef.Current.GetGlobal;
-          ipc:= g.GetValueByKey(G_VAR_IN_JS_NAME).GetValueByKey('_ipc');
-          us:= message.ArgumentList.GetString(2);
-          if not Assigned(ipc) or not ipc.HasValueByKey(us) then Exit;
-          try
-            v2:= ipc.GetValueByKey(us).GetValueByKey('resolve');
-            v2.ExecuteFunction(nil, [v1]);
-          finally
-            ipc.DeleteValueByKey(us);
-          end;
-        end;
+        newFunction;
+      finally
+        context.Exit;
+      end;
+    end;
+    'new_function_re': begin
+      context.Enter;
+      try
+        newFunctionRe;
       finally
         context.Exit;
       end;
@@ -517,6 +598,14 @@ begin
   result:= obj;
 end;
 
+{ TInterfaceObject }
+
+destructor TInterfaceObject.Destroy;
+begin
+  cefBaseRefCounted:= nil;
+  inherited Destroy;
+end;
+
 function AddObjectList(obj: TObject): string;
 begin
   Result:= NewUID;
@@ -530,7 +619,16 @@ end;
 
 function GetObjectList(const uuid: string): TObject;
 begin
+  if not Assigned(ObjectList) then begin
+    Result:= nil;
+    Exit;
+  end;
   Result:= ObjectList.GetObject(uuid);
+end;
+
+procedure SetObjectList(const uuid: string; obj: TObject);
+begin
+  ObjectList.SetObject(uuid, obj);
 end;
 
 procedure RemoveObjectList(const uuid: string);
@@ -814,6 +912,7 @@ type
 
   { TNewFunctionTask }
 
+  // DEPRECATED
   TNewFunctionTask = class(TCefTaskOwn)
   private
     code: string;
@@ -825,13 +924,7 @@ type
     constructor Create(const acode: string; aargs: ICefListValue; const auid: string); reintroduce;
   end;
 
-procedure NewFunction(const code: string; args: ICefListValue; const uid: string);
-begin
-  CefPostTask(TID_UI, TNewFunctionTask.Create(code, args, uid));
-end;
-
-{ TNewFunctionTask }
-
+// DEPRECATED
 constructor TNewFunctionTask.Create(const acode: string; aargs: ICefListValue; const auid: string);
 begin
   code:= acode;
@@ -840,6 +933,7 @@ begin
   inherited Create;
 end;
 
+// DEPRECATED
 procedure TNewFunctionTask.Execute;
 var
   msg: ICefProcessMessage;
@@ -855,6 +949,44 @@ begin
   msg.ArgumentList.SetString(2, UTF8Decode(uid));
 
   unit_global.Chromium.SendProcessMessage(PID_RENDERER, msg);
+end;
+
+// DEPRECATED
+procedure NewFunction(const code: string; args: ICefListValue; const uid: string);
+begin
+  CefPostTask(TID_UI, TNewFunctionTask.Create(code, args, uid));
+end;
+
+function NewFunctionRe(const code: string; args: ICefListValue; const uid: string): ICefValue;
+var
+  msg: ICefProcessMessage;
+  resultId: string;
+  obj: TInterfaceObject;
+begin
+  msg:= TCefProcessMessageRef.New('new_function_re');
+  if Assigned(args) then begin
+    msg.ArgumentList.SetList(0, args);
+  end else begin
+    msg.ArgumentList.SetList(0, TCefListValueRef.New);
+  end;
+  msg.ArgumentList.SetString(1, UTF8Decode(code));
+
+  msg.ArgumentList.SetString(2, UTF8Decode(uid));
+  resultId:= AddObjectList(nil);
+  msg.ArgumentList.SetString(3, UTF8Decode(resultId));
+
+  unit_global.Chromium.SendProcessMessage(PID_RENDERER, msg);
+
+  while true do begin
+    obj:= TInterfaceObject(GetObjectList(resultId));
+    if Assigned(obj) then begin
+      Result:= obj.cefBaseRefCounted as ICefValue;
+      break;
+    end;
+    Sleep(1);
+  end;
+
+  RemoveObjectList(resultId);
 end;
 
 function NewFunctionV8(const code: string; args: TCefv8ValueArray): ICefv8Value;
