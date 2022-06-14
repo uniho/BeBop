@@ -66,25 +66,6 @@ type
     destructor Destroy; override;
   end;
 
-  //{ ICefUserDataObject }
-  //
-  //ICefUserDataObject = interface(ICefv8Value)
-  //  ['{7754755E-2B08-4E4A-AF75-5FE805B5E453}'] // SHIFT+CTRL+G!
-  //  function GetObject: TObject;
-  //end;
-  //
-  //{ TCefUserDataObject }
-  //
-  //TCefUserDataObject = class(TCefv8ValueRef, ICefUserDataObject)
-  //private
-  //  obj: TObject;
-  //protected
-  //public
-  //  constructor Create(const aobj: TObject); overload;
-  //  destructor Destroy; override;
-  //  function GetObject: TObject;
-  //end;
-
 
 procedure WebKitInitializedEvent;
 procedure ContextCreatedEvent(const browser: ICefBrowser; const frame: ICefFrame; const context: ICefv8Context);
@@ -540,24 +521,6 @@ type
   public
     constructor Create(const auuid: string; aresult: TTaskResult = nil); reintroduce;
   end;
-
-//{ TCefUserDataObject }
-//
-//constructor TCefUserDataObject.Create(const aobj: TObject);
-//begin
-//  obj:= aobj;
-//  inherited Create(cef_value_create());
-//end;
-//
-//destructor TCefUserDataObject.Destroy;
-//begin
-//  inherited Destroy;
-//end;
-//
-//function TCefUserDataObject.GetObject: TObject;
-//begin
-//  Result:= obj;
-//end;
 
 { TAddObjectListTask }
 

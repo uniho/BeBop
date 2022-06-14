@@ -12,7 +12,7 @@ implementation
 uses
   unit_global, fileutil, LazFileUtils, unit_js, unit_thread,
   uCEFTypes, uCEFInterfaces, uCEFConstants, uCEFv8Context, uCEFv8Value, uCEFValue,
-  uCEFListValue, uCefDictionaryValue, uCefBinaryValue, uCefv8ArrayBufferReleaseCallback;
+  uCEFListValue, uCefDictionaryValue, uCefBinaryValue;
 
 const
   MODULE_NAME = 'fs'; //////////
