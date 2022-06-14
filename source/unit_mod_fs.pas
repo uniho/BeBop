@@ -738,6 +738,7 @@ type
   private
     srcTarget, dstTarget: string;
     optRecursive, optPreparation: boolean;
+    optFilter: string;
     FCanceled, FComplete: boolean;
     FFileName, FError, argString: string;
     FCount, FSize, argInt64: int64;
@@ -750,7 +751,9 @@ type
   protected
     procedure Execute; override;
   public
+    UID: string;
     constructor Create(const src, dst: string; option: ICefDictionaryValue);
+    destructor Destroy; override;
     procedure cancel;
     property canceled: boolean read FCanceled;
     property complete: boolean read FComplete;
@@ -763,13 +766,28 @@ type
 { TRealCpThread }
 
 constructor TRealCpThread.Create(const src, dst: string; option: ICefDictionaryValue);
+var
+  dic: ICefDictionaryValue;
 begin
   srcTarget:= src;
   dstTarget:= dst;
   optRecursive:= Assigned(option) and option.HasKey('recursive') and option.GetBool('recursive');
   optPreparation:= (dst = '') or (Assigned(option) and option.HasKey('preparation') and option.GetBool('preparation'));
+  if Assigned(option) and option.HasKey('filter') and (option.GetType('filter') = VTYPE_DICTIONARY) then begin
+    dic:= option.GetDictionary('filter');
+    if dic.HasKey(VTYPE_FUNCTION_NAME) then begin
+      optFilter:= UTF8Encode(dic.GetString('FuncName'));
+    end;
+  end;
+
   FreeOnTerminate:= false;
   inherited Create(false);
+end;
+
+destructor TRealCpThread.Destroy;
+begin
+  RemoveIPCG(UID);
+  inherited Destroy;
 end;
 
 procedure TRealCpThread.Execute;
@@ -795,6 +813,8 @@ procedure TRealCpThread.Execute;
   var
     searchRec: TSearchRec;
     s, srcDir, dstDir: string;
+    args: ICefListValue;
+    filter: boolean;
   begin
     Result:= false;
     if FileExists(src) then begin
@@ -814,13 +834,29 @@ procedure TRealCpThread.Execute;
               if (searchRec.Attr and faDirectory <> 0) then begin
                 if recursive then begin
                   s:= IncludeTrailingPathDelimiter(searchRec.Name);
-                  if not DirectoryExists(dstDir+s) then RealCreateDir(dstDir+s);
-                  Result:= copy(srcDir+s, dstDir+s, recursive);
-                  if not Result then exit;
+                  filter:= true;
+                  if optFilter <> '' then begin
+                    args:= TCefListValueRef.New;
+                    args.SetString(0, UTF8Decode(srcDir+s));
+                    filter:= NewFunctionRe('return ' + optFilter + '(args[0]);', args, UID).GetBool;
+                  end;
+                  if filter then begin
+                    if not DirectoryExists(dstDir+s) then RealCreateDir(dstDir+s);
+                    Result:= copy(srcDir+s, dstDir+s, recursive);
+                    if not Result then exit;
+                  end;
                 end;
               end else begin
-                Result:= copy(srcDir+searchRec.Name, dstDir+searchRec.Name);
-                if not Result then exit;
+                filter:= true;
+                if optFilter <> '' then begin
+                  args:= TCefListValueRef.New;
+                  args.SetString(0, UTF8Decode(srcDir+searchRec.Name));
+                  filter:= NewFunctionRe('return ' + optFilter + '(args[0]);', args, UID).GetBool;
+                end;
+                if filter then begin
+                  Result:= copy(srcDir+searchRec.Name, dstDir+searchRec.Name);
+                  if not Result then exit;
+                end;
               end;
             end;
           until (FindNext(searchRec) <> 0) or Terminated;
@@ -903,6 +939,7 @@ begin
   end;
 
   thread:= TRealCpThread.Create(src, dst, option);
+  thread.UID:= Self.UID;
   if not Assigned(option) or not option.GetBool('progressive') then begin
     thread.WaitFor;
   end;

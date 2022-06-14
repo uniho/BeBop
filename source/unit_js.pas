@@ -74,7 +74,7 @@ procedure ProcessMessageReceivedEvent(const browser: ICefBrowser; const frame: I
 
 procedure AddModuleHandler(const name: string; requireCreate, requireExecute: TRequireFunction; safeExecute: TSafeExecute);
 procedure AddModuleHandler(const name, body: string; creater: TImportCreate; safeExecute: TSafeExecute);
-function AddObjectList(obj: TObject): string;
+function AddObjectList(const obj: TObject): string;
 procedure AddObjectListUUID(const uuid: string; obj: TObject);
 function GetObjectList(const uuid: string): TObject;
 procedure SetObjectList(const uuid: string; obj: TObject);
@@ -82,16 +82,17 @@ procedure RemoveObjectList(const uuid: string);
 procedure RemoveObjectListResult(const uuid: string; result: TTaskResult);
 function StringPasToJS(const str: string): string;
 function StringPasToJS2(const str: string): string;
-function CefValueToCefv8Value(cef: ICefValue): ICefv8Value;
-function Cefv8ValueToCefValue(v8: ICefv8Value): ICefValue;
-function Cefv8ArrayToCefList(v8: TCefv8ValueArray): ICefListValue;
-function NewV8Object(parent: ICefv8Value; const args: TCefv8ValueArray): ICefv8Value;
-function NewV8Promise(const name: ustring; handler: ICefv8Handler): ICefv8Value;
-procedure NewFunction(const code: string; args: ICefListValue = nil; const uid: string = ''); // DEPRECATED
-function NewFunctionRe(const code: string; args: ICefListValue = nil; const uid: string = ''): ICefValue;
-function NewFunctionV8(const code: string; args: TCefv8ValueArray): ICefv8Value;
-function NewUserObject(obj: TObject): ICefDictionaryValue;
-function NewUserObjectV8(obj: TObject): ICefv8Value;
+function CefValueToCefv8Value(const cef: ICefValue): ICefv8Value;
+function Cefv8ValueToCefValue(const v8: ICefv8Value; const uid: string): ICefValue;
+function Cefv8ArrayToCefList(const v8: TCefv8ValueArray; const uid: string): ICefListValue;
+procedure RemoveIPCG(const uid: string);
+function NewV8Object(const parent: ICefv8Value; const args: TCefv8ValueArray): ICefv8Value;
+function NewV8Promise(const name: ustring; const handler: ICefv8Handler): ICefv8Value;
+procedure NewFunction(const code: string; const args: ICefListValue = nil; const uid: string = ''); // DEPRECATED
+function NewFunctionRe(const code: string; const args: ICefListValue = nil; const uid: string = ''; return: boolean = true): ICefValue;
+function NewFunctionV8(const code: string; const args: TCefv8ValueArray): ICefv8Value;
+function NewUserObject(const obj: TObject): ICefDictionaryValue;
+function NewUserObjectV8(const obj: TObject): ICefv8Value;
 procedure showWarning(const msg: string);
 
 procedure FreeMemProc(buffer: Pointer);
@@ -199,7 +200,7 @@ begin
   FreeMem(buffer);
 end;
 
-function CefValueToCefv8Value(cef: ICefValue): ICefv8Value;
+function CefValueToCefv8Value(const cef: ICefValue): ICefv8Value;
 var
   i, len: integer;
   sl: TStringList;
@@ -299,7 +300,9 @@ var
     us:= message.ArgumentList.GetString(0);
     if not Assigned(ipc) or not ipc.HasValueByKey(us) then Exit;
     try
-      if message.ArgumentList.GetBool(1) then begin
+      i:= message.ArgumentList.GetInt(1);
+      if i = 0 then Exit;
+      if i = 1 then begin
         v1:= ipc.GetValueByKey(us).GetValueByKey('resolve');
         param:= CefValueToCefv8Value(message.ArgumentList.GetValue(2));
         if ipc.GetValueByKey(us).HasValueByKey('resolve_args') then begin
@@ -390,8 +393,8 @@ var
     SetLength(arr{%H-}, len+2);
     us:= message.ArgumentList.GetString(2);
     ipc:= nil;
-    resolve:= nil;
-    reject:= nil;
+    resolve:= TCefV8ValueRef.NewNull;
+    reject:= TCefV8ValueRef.NewNull;
     if us <> '' then begin
       // to resolve promise
       ipc:= g.GetValueByKey(G_VAR_IN_JS_NAME).GetValueByKey('_ipc');
@@ -408,13 +411,9 @@ var
 
     v1:= v1.ExecuteFunction(nil, arr);
 
-    if Assigned(ipc) and ipc.HasValueByKey(us) then begin
-      ipc.DeleteValueByKey(us);
-    end;
-
     msg:= TCefProcessMessageRef.New('new_function_re');
     msg.ArgumentList.SetString(0, message.ArgumentList.GetString(3)); // resultId
-    msg.ArgumentList.SetValue(1, Cefv8ValueToCefValue(v1));
+    msg.ArgumentList.SetValue(1, Cefv8ValueToCefValue(v1, us));
     frame.SendProcessMessage(PID_BROWSER, msg);
   end;
 
@@ -570,7 +569,7 @@ begin
   inherited Destroy;
 end;
 
-function AddObjectList(obj: TObject): string;
+function AddObjectList(const obj: TObject): string;
 begin
   Result:= NewUID;
   AddObjectListUUID(Result, obj);
@@ -767,7 +766,33 @@ begin
   inherited Create;
 end;
 
-function Cefv8ValueToCefValue(v8: ICefv8Value): ICefValue;
+function Cefv8ValueToCefValue(const v8: ICefv8Value; const uid: string): ICefValue;
+
+  procedure setFunction(const v: ICefValue);
+  var
+    key, uuid: ustring;
+    gvar, funcs, funcs_uid: ICefv8Value;
+    dic: ICefDictionaryValue;
+  begin
+    key:= UTF8Decode(NewUID());
+    gvar:= TCefv8ContextRef.Current.GetGlobal.GetValueByKey(G_VAR_IN_JS_NAME);
+    funcs:= gvar.GetValueByKey('_ipc_g');
+    dic:= TCefDictionaryValueRef.New;
+    dic.SetBool(VTYPE_FUNCTION_NAME, true);
+    uuid:= key;
+    if uid <> '' then uuid:= UTF8Decode(uid);
+    if funcs.HasValueByKey(uuid) then begin
+      funcs_uid:= funcs.GetValueByKey(uuid);
+    end else begin
+      funcs_uid:= TCefv8ValueRef.NewObject(nil, nil);
+      funcs.SetValueByKey(uuid, funcs_uid, V8_PROPERTY_ATTRIBUTE_NONE);
+    end;
+    funcs_uid.SetValueByKey(key, v8, V8_PROPERTY_ATTRIBUTE_NONE);
+    dic.SetString('FuncName', G_VAR_IN_JS_NAME + '._ipc_g["' + uuid + '"]["' + key + '"]');
+    dic.SetString('UID', uuid);
+    v.SetDictionary(dic);
+  end;
+
 var
   v1, v2, v3: ICefv8Value;
   i, len: integer;
@@ -793,7 +818,7 @@ begin
     len:= v8.GetArrayLength;
     //list.SetSize(len);
     for i:= 0 to len-1 do begin
-      list.SetValue(i, Cefv8ValueToCefValue(v8.GetValueByIndex(i)));
+      list.SetValue(i, Cefv8ValueToCefValue(v8.GetValueByIndex(i), uid));
     end;
     Result.SetList(list);
   end else if v8.IsArrayBuffer then begin
@@ -810,14 +835,7 @@ begin
     end;
     Result.SetBinary(TCefBinaryValueRef.New(@s[1], len));
   end else if v8.IsFunction then begin
-    //func:= TCefDictionaryValueRef.New;
-    //func.SetBool(VTYPE_FUNCTION_NAME, true);
-    //// ToDo:
-    ////func.SetString('ModuleName', 'child_process');
-    ////func.SetString('FuncName', 'subprocess.read');
-    //dic:= TCefDictionaryValueRef.New;
-    //dic.SetDictionary(v8.GetFunctionName, func);
-    //Result.SetDictionary(dic);
+    setFunction(Result);
   end else if v8.IsObject then begin
     sl:= TStringList.Create;
     try
@@ -825,7 +843,7 @@ begin
       dic:= TCefDictionaryValueRef.New;
       for i:= 0 to sl.count-1 do begin
         us:= UTF8Decode(sl[i]);
-        dic.SetValue(us, Cefv8ValueToCefValue(v8.GetValueByKey(us)));
+        dic.SetValue(us, Cefv8ValueToCefValue(v8.GetValueByKey(us), uid));
       end;
       Result.SetDictionary(dic);
     finally
@@ -834,7 +852,7 @@ begin
   end;
 end;
 
-function Cefv8ArrayToCefList(v8: TCefv8ValueArray): ICefListValue;
+function Cefv8ArrayToCefList(const v8: TCefv8ValueArray; const uid: string): ICefListValue;
 var
   i, len: integer;
 begin
@@ -842,11 +860,16 @@ begin
   len:= Length(v8);
   //Result.SetSize(len);
   for i:= 0 to len-1 do begin
-    Result.SetValue(i, Cefv8ValueToCefValue(v8[i]));
+    Result.SetValue(i, Cefv8ValueToCefValue(v8[i], uid));
   end;
 end;
 
-function NewV8Object(parent: ICefv8Value; const args: TCefv8ValueArray): ICefv8Value;
+procedure RemoveIPCG(const uid: string);
+begin
+  NewFunctionRe('delete ' + G_VAR_IN_JS_NAME + '._ipc_g["' + uid + '"];', nil, '', false);
+end;
+
+function NewV8Object(const parent: ICefv8Value; const args: TCefv8ValueArray): ICefv8Value;
 var
   v1, v2, v3, g: ICefv8Value;
   i, len: integer;
@@ -860,7 +883,7 @@ begin
   Result:= v2.ExecuteFunction(v1, [parent, v3]);
 end;
 
-function NewV8Promise(const name: ustring; handler: ICefv8Handler): ICefv8Value;
+function NewV8Promise(const name: ustring; const handler: ICefv8Handler): ICefv8Value;
 var
   v1, v2, v3, g: ICefv8Value;
 begin
@@ -916,12 +939,12 @@ begin
 end;
 
 // DEPRECATED
-procedure NewFunction(const code: string; args: ICefListValue; const uid: string);
+procedure NewFunction(const code: string; const args: ICefListValue; const uid: string);
 begin
   CefPostTask(TID_UI, TNewFunctionTask.Create(code, args, uid));
 end;
 
-function NewFunctionRe(const code: string; args: ICefListValue; const uid: string): ICefValue;
+function NewFunctionRe(const code: string; const args: ICefListValue; const uid: string; return: boolean): ICefValue;
 var
   msg: ICefProcessMessage;
   resultId: string;
@@ -941,7 +964,8 @@ begin
 
   unit_global.Chromium.SendProcessMessage(PID_RENDERER, msg);
 
-  while true do begin
+  Result:= nil;
+  while return and not unit_global.appClosing do begin
     obj:= TInterfaceObject(GetObjectList(resultId));
     if Assigned(obj) then begin
       Result:= obj.cefBaseRefCounted as ICefValue;
@@ -953,7 +977,7 @@ begin
   RemoveObjectList(resultId);
 end;
 
-function NewFunctionV8(const code: string; args: TCefv8ValueArray): ICefv8Value;
+function NewFunctionV8(const code: string; const args: TCefv8ValueArray): ICefv8Value;
 begin
   // const F = new Function("...args", code)
   Result:= newV8Object(TCefv8ContextRef.Current.GetGlobal.GetValueByKey('Function'),
@@ -962,7 +986,7 @@ begin
   Result:= Result.ExecuteFunction(nil, args);
 end;
 
-function NewUserObject(obj: TObject): ICefDictionaryValue;
+function NewUserObject(const obj: TObject): ICefDictionaryValue;
 var
   s: string;
 begin
@@ -971,7 +995,7 @@ begin
   Result.SetString(VTYPE_OBJECT_NAME, UTF8Decode(s));
 end;
 
-function NewUserObjectV8(obj: TObject): ICefv8Value;
+function NewUserObjectV8(const obj: TObject): ICefv8Value;
 var
   s: string;
   len: integer;

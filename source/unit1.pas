@@ -522,6 +522,7 @@ procedure TForm1.ChromiumProcessMessageReceived(Sender: TObject;
      + '{'
      + 'const v=window.' + G_VAR_IN_JS_NAME + ';'
      + 'v._ipc={};'
+     + 'v._ipc_g={};'
      + 'window.__dogroot = ' + StringPasToJS(dogroot) + ';'
      + 'window.__restroot = ' + StringPasToJS(restroot) + ';'
      + 'window.__execPath = ' + StringPasToJS(execPath) + ';'

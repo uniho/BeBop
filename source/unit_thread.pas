@@ -15,7 +15,6 @@ type
   private
   protected
     CefResolve, CefReject: ICefValue;
-    ResolveOnTerminate: boolean;
     procedure Execute; override;
     procedure ExecuteAct; virtual; abstract;
     procedure TerminateEvent(Sender: TObject);
@@ -81,13 +80,13 @@ begin
   msg.ArgumentList.SetSize(5);
   msg.ArgumentList.SetString(0, UTF8Decode(Result));
   msg.ArgumentList.SetString(1, UTF8Decode(moduleName + '.' + thread.ClassName));
-  msg.ArgumentList.SetList(2, Cefv8ArrayToCefList(Args));
+  msg.ArgumentList.SetList(2, Cefv8ArrayToCefList(Args, Result));
   if g.IsSame(obj) then begin
     msg.ArgumentList.SetNull(3);
   end else begin
-    msg.ArgumentList.SetValue(3, Cefv8ValueToCefValue(obj));
+    msg.ArgumentList.SetValue(3, Cefv8ValueToCefValue(obj, Result));
   end;
-  msg.ArgumentList.SetValue(4, Cefv8ValueToCefValue(local));
+  msg.ArgumentList.SetValue(4, Cefv8ValueToCefValue(local, Result));
 
   TCefv8ContextRef.Current.Browser.MainFrame.SendProcessMessage(PID_BROWSER, msg);
 end;
@@ -115,7 +114,6 @@ end;
 constructor TPromiseThread.Create();
 begin
   FreeOnTerminate:= False;
-  ResolveOnTerminate:= True;
   OnTerminate:= @TerminateEvent;
   inherited Create(True); // CreateSuspended=True
 end;
@@ -141,21 +139,23 @@ procedure TPromiseThread.TerminateEvent(Sender: TObject);
 var
   msg: ICefProcessMessage;
 begin
-  if Terminated or not ResolveOnTerminate then exit;
+  if Terminated then exit;
 
   msg:= TCefProcessMessageRef.New('promise');
   msg.ArgumentList.SetSize(3);
   msg.ArgumentList.SetString(0, UTF8Decode(UID));
   if Assigned(CefResolve) then begin
-    msg.ArgumentList.SetBool(1, true); // resolve
+    msg.ArgumentList.SetInt(1, 1); // resolve
     msg.ArgumentList.SetValue(2, CefResolve);
-  end else begin
-    msg.ArgumentList.SetBool(1, false); // reject
+  end else if Assigned(CefReject) then begin
+    msg.ArgumentList.SetInt(1, -1); // reject
     if Assigned(CefReject) then begin
       msg.ArgumentList.SetValue(2, CefReject);
     end else begin
       msg.ArgumentList.SetNull(2);
     end;
+  end else begin
+    msg.ArgumentList.SetInt(1, 0);
   end;
 
   Frame.SendProcessMessage(PID_RENDERER, msg);

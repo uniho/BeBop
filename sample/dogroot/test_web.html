@@ -60,52 +60,163 @@
   const path = await import('/~/path')
   const process = await import('/~/process')
   const fs = await import('/~/fs')
-
-  let saveName
-  if (process.platform == 'win32' || process.platform == 'linux') {
-    saveName = path.join(__execPath, 'downloads', path.basename(URL))
-    await fs.mkdir(path.dirname(saveName), {recursive: true})
-  } else {
-    // darwin
-    saveName = path.join(process.env['HOME'], 'Downloads', path.basename(URL))
-  }
+  const {execFile} = await import('/~/child_process')
 
   const Test = props => {
     
     const [state, setState] = React.useState({doing:false})
-    const refRequest = React.useRef(false)
+    const refFile = React.useRef(false)
 
     const onClick = async e => {
       if (!state.doing) {
-        setState({doing: true})
-        refRequest.current = await util.downloadFile(URL, saveName)
-        let stat
-        while (1) {
-          stat = await refRequest.current.read()
-          if (stat.finished) break
-          setState({
-            doing: true,
-            curBytes: stat.curBytes, totalBytes: stat.totalBytes
-          })
-        }
-        setState({
-          doing: false,
-          curBytes: stat.curBytes, totalBytes: stat.totalBytes
-        })
+        doing()
       } else {
-        refRequest.current.cancel()
+        if (refFile.current) refFile.current.cancel()
+        setState({
+          doing: true, disabled: true,
+          title: 'Canceling...'
+        })
       }
     }
 
+    const doing = async () => {
+      let stat = {}
+      do {
+        {
+          const URL = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+
+          let title = `Download ${path.basename(URL)}...`
+          setState({doing: true, disabled: true, title})
+
+          let saveName
+          if (process.platform == 'win32' || process.platform == 'linux') {
+            saveName = path.join(__execPath, 'downloads', path.basename(URL))
+            await fs.mkdir(path.dirname(saveName), {recursive: true})
+          } else {
+            // darwin
+            saveName = path.join(process.env['HOME'], 'Downloads', path.basename(URL))
+          }
+
+          refFile.current = await util.downloadFile(URL, saveName)
+          while (1) {
+            stat = await refFile.current.read()
+            if (stat.finished) break
+            setState({
+              doing: true, title,
+              msg: `${stat.curBytes > 0 ? `${stat.curBytes}${stat.totalBytes > 0 ? ` / ${stat.totalBytes}`: ''}` : ''}`
+            })
+          }
+          if (stat.canceled) break
+
+          title = `Copy ${path.basename(URL)}...`
+          setState({doing: true, disabled: true, title})
+
+          refFile.current = await fs.cp(
+            saveName,
+            path.join(path.dirname(saveName), path.basename(saveName, path.extname(saveName)) + '.copy' + path.extname(saveName)),
+            {}
+          )
+        }
+
+        {
+          const URL = 'https://github.com/uniho/BeBop/archive/refs/tags/v1.0.2+101.0.18.zip'
+
+          let title = `Download ${path.basename(URL)}...`
+          setState({doing: true, disabled: true, title})
+
+          let saveName
+          if (process.platform == 'win32' || process.platform == 'linux') {
+            saveName = path.join(__execPath, 'downloads', path.basename(URL))
+            await fs.mkdir(path.dirname(saveName), {recursive: true})
+          } else {
+            // darwin
+            saveName = path.join(process.env['HOME'], 'Downloads', path.basename(URL))
+          }
+
+          refFile.current = await util.downloadFile(URL, saveName)
+          while (1) {
+            stat = await refFile.current.read()
+            if (stat.finished) break
+            setState({
+              doing: true, title,
+              msg: `${stat.curBytes > 0 ? `${stat.curBytes}${stat.totalBytes > 0 ? ` / ${stat.totalBytes}`: ''}` : ''}`
+            })
+          }
+          if (stat.canceled) break
+
+          title = `Expand ${path.basename(URL)}...`
+          setState({doing: true, disabled: true, title})
+
+          await fs.rm(saveName+'.dir', {recursive: true})
+          refFile.current = await execFile(
+            'powershell', 
+            ['-command', `Expand-Archive ${saveName} ${saveName+'.dir'}`, '-Verbose'],
+            {windowsHide: true}
+          )
+          {
+            let count = 0
+            while (1) {
+              stat = await refFile.current.read()
+              if (stat.finished) break
+              const match = stat.stdout.match(/\r/g)
+              if (match) {
+                count += match.length
+                setState({
+                  doing: true, title,
+                  msg: Math.trunc(count / 2)
+                })
+              }
+            }
+          }
+          if (stat.canceled) break
+
+          title = `Copy ${path.basename(URL)}...`
+          setState({doing: true, disabled: true, title})
+
+          refFile.current = await fs.cp(
+            saveName+'.dir', false,
+            {recursive: true, preparation:true}
+          )
+          const total = (await refFile.current.read()).count
+
+          refFile.current = await fs.cp(
+            saveName+'.dir', saveName+'.2.dir',
+            {
+              recursive: true, progressive: true,
+              filter: fn => {
+                console.log(fn)
+                return path.extname(fn) != '.pas'
+              }
+            }
+          )
+          while (1) {
+            stat = await refFile.current.read()
+            if (stat.finished) break
+            setState({
+              doing: true, title,
+              msg: `${stat.count} / ${total}`
+            })
+          }
+          if (stat.canceled) break
+        }
+
+      } while (0)
+
+      if (stat.canceled) {
+        setState({doing: false, title: 'Canceled.'})
+      } else {
+        setState({doing: false, title: 'Finished!'})
+      }
+    } 
+
     return html`
     <div className="red-box">
-      <div>${URL}</div>
-      <div> 👉 ${saveName}</div>
       <span>
-        <button onClick=${onClick}>
+        <button onClick=${onClick} disabled=${state.disabled}>
           ${state.doing ? 'Cancel' : 'Start'}
         </button>
-        ${state.curBytes && state.totalBytes ? `${state.curBytes} / ${state.totalBytes}` : ''}
+        <div>${state.title || ''}</div>
+        <div>${state.msg || ''}</div>
       </span>
     </div>
     `
@@ -135,6 +246,11 @@
       margin: 1rem 1rem;
       padding: 0.25rem 1rem;
       cursor: pointer;
+    }
+    button:disabled {
+      background: gray;
+      border-color: gray;
+      cursor: auto;
     }
   }
   `

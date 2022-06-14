@@ -385,8 +385,7 @@ begin
     'resolve(escapeEl.textContent);'
     , Args, UID);
 
-  // NewFunctionRe() with UID resolves promise on its own, and thus nothing to do on terminate process.
-  ResolveOnTerminate:= false;
+  // NewFunctionRe() with UID resolves promise on its own, and thus nothing to return on terminate process.
 end;
 
 //
