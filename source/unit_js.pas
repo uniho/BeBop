@@ -433,6 +433,7 @@ begin
     'new_function': begin // DEPRECATED
       context.Enter;
       try
+        showWarning('unit_js.NewFunction() has been DEPRECATED. use unit_js.NewFunctionRe().');
         newFunction;
       finally
         context.Exit;
