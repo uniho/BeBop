@@ -379,13 +379,13 @@ end;
 procedure TUnescapeHtmlThread.ExecuteAct;
 begin
   // see https://javascript.info/new-function
-  NewFunction(
+  NewFunctionRe(
     'const escapeEl = window.document.createElement("textarea");' +
     'escapeEl.innerHTML = args[0];' +
-    'return escapeEl.textContent;'
+    'resolve(escapeEl.textContent);'
     , Args, UID);
 
-  // NewFunction() with UID resolves promise on its own, and thus nothing to do on terminate process.
+  // NewFunctionRe() with UID resolves promise on its own, and thus nothing to do on terminate process.
   ResolveOnTerminate:= false;
 end;
 
