@@ -148,12 +148,12 @@
           setState({doing: true, disabled: true, title})
 
           await fs.rm(saveName+'.dir', {recursive: true})
-          refFile.current = await execFile(
-            'powershell', 
-            ['-command', `Expand-Archive ${saveName} ${saveName+'.dir'}`, '-Verbose'],
-            {windowsHide: true}
-          )
-          {
+          if (process.platform == 'win32') {
+            refFile.current = await execFile(
+              'powershell', 
+              ['-command', `Expand-Archive ${saveName} ${saveName+'.dir'}`, '-Verbose'],
+              {windowsHide: true}
+            )
             let count = 0
             while (1) {
               stat = await refFile.current.read()
@@ -167,7 +167,26 @@
                 })
               }
             }
-          }
+          } else { // linux, darwin
+            refFile.current = await execFile(
+              'unzip', 
+              [saveName, '-d', saveName+'.dir'],
+              {}
+            )
+            let count = 0
+            while (1) {
+              stat = await refFile.current.read()
+              if (stat.finished) break
+              const match = stat.stdout.match(/\r/g)
+              if (match) {
+                count += match.length
+                setState({
+                  doing: true, title,
+                  msg: Math.trunc(count)
+                })
+              }
+            }
+          } 
           if (stat.canceled) break
 
           title = `Copy ${path.basename(URL)}...`
