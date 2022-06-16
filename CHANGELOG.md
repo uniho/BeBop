@@ -4,6 +4,7 @@
 
 ## v1.1.0+102.0.10
 
+* CEF 102.0.10 / Lazarus 2.2.2 / FPC 3.2.2
 * 🚀 Launch BeBop for MacOS!
 * Add icon.
 * [bebop module] Add `mainform.setBounds()`.
