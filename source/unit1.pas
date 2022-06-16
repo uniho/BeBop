@@ -54,7 +54,6 @@ type
     procedure ChromiumConsoleMessageEvent(Data: PtrInt);
     procedure ChromiumBeforeContextMenu(Sender: TObject; const browser: ICefBrowser; const frame: ICefFrame; const params: ICefContextMenuParams; const model: ICefMenuModel);
   protected
-    procedure RealizeBounds; override;
   public
   end;
 
@@ -291,7 +290,7 @@ begin
   {$IF not Defined(LCLGTK2)}
   ThreadWakeupCef:= TThreadWakeupCef.Create;
   {$ELSE}
-  // GTK2 needs a visible form to create a browser so we need to use the TForm.OnActivate event
+  // GTK2 needs a visible form to create a browser so we need to use after show event
   Self.SetBounds(0, 0, 1, 1);
   {$ENDIF}
 end;
@@ -310,8 +309,11 @@ end;
 procedure TForm1.FormShowEvent(Data: PtrInt);
 begin
   CEFWindowParent.Chromium:= unit_global.Chromium;
+  {$IF Defined(DARWIN)}
+  CEFWindowParent.UpdateSize;
+  {$ENDIF}
   {$IF Defined(LCLGTK2)}
-  // GTK2 needs a visible form to create a browser so we need to use the TForm.OnActivate event
+  // GTK2 needs a visible form to create a browser so we need to use after show event
   ThreadWakeupCef:= TThreadWakeupCef.Create;
   {$ENDIF}
 end;
@@ -616,20 +618,6 @@ procedure TForm1.ChromiumBeforeContextMenu(Sender: TObject;
   const params: ICefContextMenuParams; const model: ICefMenuModel);
 begin
   model.Clear; // Disable the context menu
-end;
-
-procedure TForm1.RealizeBounds;
-{$IF Defined(DARWIN)}
-var
-  size: NSSize;
-{$ENDIF}
-begin
-  inherited;
-{$IF Defined(DARWIN)}
-  size.width:= Self.ClientWidth;
-  size.height:= Self.ClientHeight;
-  NSView(unit_global.Chromium.WindowHandle).setFrameSize(size);
-{$ENDIF}
 end;
 
 type
