@@ -1,5 +1,9 @@
 ## Next version
 
+* Not yet
+
+## v1.1.0+102.0.10
+
 * 🚀 Launch BeBop for MacOS!
 * Add icon.
 * [bebop module] Add `mainform.setBounds()`.

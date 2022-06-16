@@ -12,7 +12,7 @@ We should cut our coat according to our cloth.
 
 BeBop framework aims at `S+E+L+F` development that means SIMPLE, EASY, LIGHT, and FAST.
 
-Lazarus is a free cross-platform visual integrated development environment (IDE) for rapid application development (RAD) using FPC, and for a number of different platforms, including Mac, Chromebook, Linux, and Windows.
+Lazarus is a free cross-platform visual integrated development environment (IDE) for rapid application development (RAD) using FPC, and for a number of different platforms, including MacOS, Chromebook, Linux, and Windows.
 
 Lazarus with FPC generate very fast small native binaries even though they provide an easy-to-use development, and thus it makes frontend engineers release from the many issues, including the excuse for legitimatery slacking off: "My code's compiling."
 
@@ -24,10 +24,10 @@ Lazarus with FPC generate very fast small native binaries even though they provi
    * You can take `bebop.exe` from `bebop-v1.x.x+x.x.x-win32.tar.gz` or `bebop-v1.x.x+x.x.x-win64.tar.gz`.
    * And `bebop.cfg` and some files put in `dogroot` directory from `sample-v1.x.x+x.x.x.tar.gz`.
 1. Download the CEF binarie files from [CEF Automated Builds](https://cef-builds.spotifycdn.com/index.html).
-   * [For Windows 32bit](https://cef-builds.spotifycdn.com/index.html#windows32:101.0.18)
-   * [For Windows 64bit](https://cef-builds.spotifycdn.com/index.html#windows64:101.0.18)
+   * [For Windows 32bit](https://cef-builds.spotifycdn.com/index.html#windows32:102.0.10)
+   * [For Windows 64bit](https://cef-builds.spotifycdn.com/index.html#windows64:102.0.10)
 
-   Current supported CEF version is `101.0.18`, and "Minimal" type is recommended.
+   Current supported CEF version is `102.0.10`, and "Minimal" type is recommended.
   
    If you cannot find it, click `Show All Builds` or `Show more builds` link at the bottom.
 1. Out of the CEF binarie files, we just need directories named `Release` and `Resources`. Other directories are unnessesary.
@@ -41,9 +41,9 @@ Lazarus with FPC generate very fast small native binaries even though they provi
 1. Download the latest version of BeBop framework from [Releases page in this repository](../../releases).
    * You can take `bebop` from `bebop-v1.x.x+x.x.x-linux64.tar.gz`.
    * And `bebop.cfg` and some files put in `dogroot` directory from `sample-v1.x.x+x.x.x.tar.gz`.
-1. Download the CEF binarie files from [CEF Automated Builds (Linux 64-bit)](https://cef-builds.spotifycdn.com/index.html#linux64:101.0.18).
+1. Download the CEF binarie files from [CEF Automated Builds (Linux 64-bit)](https://cef-builds.spotifycdn.com/index.html#linux64:102.0.10).
 
-   Current supported CEF version is `101.0.18`, and "Minimal" type is recommended.
+   Current supported CEF version is `102.0.10`, and "Minimal" type is recommended.
   
    If you cannot find it, click `Show All Builds` or `Show more builds` link at the bottom.
 1. Out of the CEF binarie files, we just need directories named `Release` and `Resources`. Other directories are unnessesary.
@@ -53,10 +53,65 @@ Lazarus with FPC generate very fast small native binaries even though they provi
 1. Click the `bebop`, and a new app will be your new best friend.
 
 
-### ♪ Chromebook
-COMING SOON MAYBE. Any help is welcome.
+### ♪ MacOS 64bit
+1. Download the latest version of BeBop framework from [Releases page in this repository](../../releases).
+   * You can take `bebop` and `bebop.app` from `bebop-v1.x.x+x.x.x-macosx64.zip`.
+   * And `bebop.cfg` and some files put in `dogroot` directory from `sample-v1.x.x+x.x.x.zip`.
+1. Put `bebop.app`, `bebop`, `bebop.cfg` and `dogroot` directory into a same directory. (`bebop.app` is a kind of [bundle file](https://en.wikipedia.org/wiki/Bundle_(macOS)), so you can handle it like a directory.)
 
-### ♪ Mac
+```
+<Your Dir>
+  ├ <dogroot>
+  ├ <bebop.app>
+  ├ bebop
+  └ bebop.cfg
+```
+
+3. Download the CEF binarie files from [CEF Automated Builds (MacOS 64-bit)](https://cef-builds.spotifycdn.com/index.html#macosx64:102.0.10).
+
+   Current supported CEF version is `102.0.10`, and "Minimal" type is recommended.
+  
+   If you cannot find it, click `Show All Builds` or `Show more builds` link at the bottom.
+1. Out of the CEF binarie files, we just need `/Release/Chromium Embedded Framework.framework` directory. Other directories are unnessesary.
+1. Copy `Chromium Embedded Framework.framework` directory into `bebop.app/Contents/Frameworks` directory. `bebop.app` is a kind of [bundle file](https://en.wikipedia.org/wiki/Bundle_(macOS)), so you can handle it like a directory.
+
+```
+<bebop.app>
+   └ <Contents>
+       ├ <Frameworks>
+       │    ├ <Chromium Embedded Framework.framework> 👈👈👈
+       │    │    ├ <Libraries>
+       │    │    │     └ ... 
+       │    │    ├ <Resources>
+       │    │    │     └ ... 
+       │    │    └ Chromium Embedded Framework
+       │    ├ bebop Helper.app
+       │    ├ bebop Helper(GPU).app
+       │    ├ bebop Helper(Renderer).app
+       │    └ bebop Helper(Plugin).app
+       ├ <MacOS>
+       │    └ 🔗bebop
+       ├ <Resources>
+       │    ├ 🔗<dogroot>
+       │    └ 🔗bebop.cfg
+       ├ info.plist
+       └ PkgInfo
+
+🔗:Symbolic Link
+```
+
+Your Directory again.
+```
+<Your Dir>
+  ├ <dogroot>
+  ├ <bebop.app>
+  ├ bebop
+  └ bebop.cfg
+```
+
+6. Click the `bebop.app` then a new app will be your new best friend.
+
+### ♪ Chromebook
 COMING SOON MAYBE. Any help is welcome.
 
 ## 👶 First steps
