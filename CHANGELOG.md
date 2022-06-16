@@ -4,7 +4,7 @@
 * Add icon.
 * [bebop module] Add `mainform.setBounds()`.
 * [fs module] Add `fs.cp()`.
-* [child_process module] Add `dir` option.
+* [child_process module] Add `cwd` option.
 * [child_process module] Add `env` option.
 * Add web_util module.
 * Set `require()` deprecated.
