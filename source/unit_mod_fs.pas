@@ -1037,12 +1037,20 @@ end;
 procedure TRmThread.ExecuteAct;
 
   function RealRemoveFile(const src: string): boolean;
+  var
+    attr: integer;
   begin
+    attr:= FileGetAttr(src);
+    if (attr and faReadOnly) > 0 then FileSetAttr(src, attr - faReadOnly);
     Result:= DeleteFile(src);
   end;
 
   function RealRemoveDir(const src: string): boolean;
+  var
+    attr: integer;
   begin
+    attr:= FileGetAttr(src);
+    if (attr and faReadOnly) > 0 then FileSetAttr(src, attr - faReadOnly);
     Result:= RemoveDir(src);
   end;
 
