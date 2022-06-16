@@ -22,7 +22,7 @@ Lazarus with FPC generate very fast small native binaries even though they provi
 
 1. Download the latest version of BeBop framework from [Releases page in this repository](../../releases).
    * You can take `bebop.exe` from `bebop-v1.x.x+x.x.x-win32.zip` or `bebop-v1.x.x+x.x.x-win64.zip`.
-   * And `bebop.cfg` and some files put in `dogroot` directory from `sample-v1.x.x+x.x.x.zip`.
+   * Also, `bebop.cfg`, `bebop.ico` and some files put in `dogroot` directory from `sample-v1.x.x+x.x.x.zip`.
 1. Download the CEF binarie files from [CEF Automated Builds](https://cef-builds.spotifycdn.com/index.html).
    * [For Windows 32bit](https://cef-builds.spotifycdn.com/index.html#windows32:102.0.10)
    * [For Windows 64bit](https://cef-builds.spotifycdn.com/index.html#windows64:102.0.10)
@@ -40,7 +40,7 @@ Lazarus with FPC generate very fast small native binaries even though they provi
 
 1. Download the latest version of BeBop framework from [Releases page in this repository](../../releases).
    * You can take `bebop` from `bebop-v1.x.x+x.x.x-linux64.zip`.
-   * And `bebop.cfg` and some files put in `dogroot` directory from `sample-v1.x.x+x.x.x.zip`.
+   * Also, `bebop.cfg`, `bebop.ico` and some files put in `dogroot` directory from `sample-v1.x.x+x.x.x.zip`.
 1. Download the CEF binarie files from [CEF Automated Builds (Linux 64-bit)](https://cef-builds.spotifycdn.com/index.html#linux64:102.0.10).
 
    Current supported CEF version is `102.0.10`, and "Minimal" type is recommended.
@@ -56,7 +56,7 @@ Lazarus with FPC generate very fast small native binaries even though they provi
 ### ♪ MacOS 64bit
 1. Download the latest version of BeBop framework from [Releases page in this repository](../../releases).
    * You can take `bebop` and `bebop.app` from `bebop-v1.x.x+x.x.x-macosx64.zip`.
-   * And `bebop.cfg` and some files put in `dogroot` directory from `sample-v1.x.x+x.x.x.zip`.
+   * Also, `bebop.cfg` and some files put in `dogroot` directory from `sample-v1.x.x+x.x.x.zip`.
 1. Put `bebop.app`, `bebop`, `bebop.cfg` and `dogroot` directory into a same directory. (`bebop.app` is a kind of [bundle file](https://en.wikipedia.org/wiki/Bundle_(macOS)), so you can handle it like a directory.)
 
 ```
