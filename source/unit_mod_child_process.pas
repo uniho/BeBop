@@ -303,33 +303,33 @@ begin
   dic.SetInt('status', exitStatus);
 
   func:= TCefDictionaryValueRef.New;
-  func.SetBool(VTYPE_FUNCTION_NAME, true);
+  func.SetString(VTYPE_FUNCTION_NAME, 'read');
   func.SetString('ModuleName', MODULE_NAME);
   func.SetString('FuncName', 'subprocess.read');
   dic.SetDictionary('read', func);
 
   func:= TCefDictionaryValueRef.New;
-  func.SetBool(VTYPE_FUNCTION_NAME, true);
+  func.SetString(VTYPE_FUNCTION_NAME, 'close');
   func.SetString('ModuleName', MODULE_NAME);
   func.SetString('FuncName', 'subprocess.close');
   dic.SetDictionary('close', func);
 
   func:= TCefDictionaryValueRef.New;
-  func.SetBool(VTYPE_FUNCTION_NAME, true);
+  func.SetString(VTYPE_FUNCTION_NAME, 'cancel');
   func.SetString('ModuleName', MODULE_NAME);
   func.SetString('FuncName', 'subprocess.cancel');
   dic.SetDictionary('cancel', func);
 
   {$IFDEF CEF_SINGLE_PROCESS}
   func:= TCefDictionaryValueRef.New;
-  func.SetBool(VTYPE_FUNCTION_NAME, true);
+  func.SetString(VTYPE_FUNCTION_NAME, 'closeSync');
   func.SetString('ModuleName', MODULE_NAME);
   func.SetString('FuncName', 'subprocess.closeSync');
   dic.SetDictionary('closeSync', func);
   {$ENDIF}
 
   func:= TCefDictionaryValueRef.New;
-  func.SetBool(VTYPE_FUNCTION_NAME, true);
+  func.SetString(VTYPE_FUNCTION_NAME, 'isRunning');
   func.SetString('ModuleName', MODULE_NAME);
   func.SetString('FuncName', 'subprocess.isRunning');
   dic.SetDictionary('isRunning', func);

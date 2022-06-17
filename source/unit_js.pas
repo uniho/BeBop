@@ -241,43 +241,69 @@ begin
       end;
     end;
     VTYPE_DICTIONARY: begin
-      Result:= TCefv8ValueRef.NewObject(nil, nil);
-      sl:= TStringList.Create;
-      try
-        cef.GetDictionary.GetKeys(sl);
-        for i:= 0 to sl.Count-1 do begin
-          if sl[i] = VTYPE_OBJECT_NAME then begin
-            // userdata
-            us:= cef.GetDictionary.GetString(VTYPE_OBJECT_NAME);
-            Result.SetValueByKey(VTYPE_OBJECT_NAME, TCefv8ValueRef.NewString(us), V8_PROPERTY_ATTRIBUTE_NONE);
+      if cef.GetDictionary.HasKey(VTYPE_FUNCTION_NAME) and
+        (cef.GetDictionary.GetType(VTYPE_FUNCTION_NAME) = VTYPE_STRING)  then begin
+        if cef.GetDictionary.HasKey('ModuleName') then begin
+          // function
+          handler:= TV8HandlerSafe.Create(
+            UTF8Encode(cef.GetDictionary.GetString('ModuleName')),
+            UTF8Encode(cef.GetDictionary.GetString('FuncName')),
+            [],
+            CefValueToCefv8Value(cef.GetDictionary.GetValue('CefObject')),
+            CefValueToCefv8Value(cef.GetDictionary.GetValue('CefLocal')));
+          Result:= TCefv8ValueRef.NewFunction(cef.GetDictionary.GetString(VTYPE_FUNCTION_NAME), handler);
+        end else if cef.GetDictionary.HasKey('G_UID') then begin
+          // function on _ipc_g
+          Result:= TCefv8ContextRef.Current.GetGlobal.GetValueByKey(G_VAR_IN_JS_NAME);
+          Result:= Result.GetValueByKey('_ipc_g');
+          Result:= Result.GetValueByKey(cef.GetDictionary.GetString('G_UID'));
+          Result:= Result.GetValueByKey(cef.GetDictionary.GetString('G_KEY'));
+        end;
+      end else begin
+        Result:= TCefv8ValueRef.NewObject(nil, nil);
+        sl:= TStringList.Create;
+        try
+          cef.GetDictionary.GetKeys(sl);
+          for i:= 0 to sl.Count-1 do begin
+            if sl[i] = VTYPE_OBJECT_NAME then begin
+              // userdata
+              us:= cef.GetDictionary.GetString(VTYPE_OBJECT_NAME);
+              Result.SetValueByKey(VTYPE_OBJECT_NAME, TCefv8ValueRef.NewString(us), V8_PROPERTY_ATTRIBUTE_NONE);
 
-            s:= UTF8Encode(us);
-            len:= Length(s) + 1;
-            p:= GetMem(len);
-            Move(PChar(s)^, p^, len);
-            Result.SetValueByKey(VTYPE_OBJECT_FIELD, TCefv8ValueRef.NewArrayBuffer(
-              p, len, TCefFastv8ArrayBufferReleaseCallback.Create(@FreeMemProcUserObject)), V8_PROPERTY_ATTRIBUTE_NONE);
-          end else begin
-            us:= UTF8Decode(sl[i]);
-            if (cef.GetDictionary.GetType(us) = VTYPE_DICTIONARY) and
-              (cef.GetDictionary.GetDictionary(us).HasKey(VTYPE_FUNCTION_NAME)) then begin
-              // function
-              handler:= TV8HandlerSafe.Create(
-                UTF8Encode(cef.GetDictionary.GetDictionary(us).GetString('ModuleName')),
-                UTF8Encode(cef.GetDictionary.GetDictionary(us).GetString('FuncName')),
-                [],
-                CefValueToCefv8Value(cef.GetDictionary.GetDictionary(us).GetValue('CefObject')),
-                CefValueToCefv8Value(cef.GetDictionary.GetDictionary(us).GetValue('CefLocal')));
-              Result.SetValueByKey(us, TCefv8ValueRef.NewFunction(us, handler), V8_PROPERTY_ATTRIBUTE_NONE);
+              s:= UTF8Encode(us);
+              len:= Length(s) + 1;
+              p:= GetMem(len);
+              Move(PChar(s)^, p^, len);
+              Result.SetValueByKey(VTYPE_OBJECT_FIELD, TCefv8ValueRef.NewArrayBuffer(
+                p, len, TCefFastv8ArrayBufferReleaseCallback.Create(@FreeMemProcUserObject)), V8_PROPERTY_ATTRIBUTE_NONE);
             end else begin
-              Result.SetValueByKey(us, CefValueToCefv8Value(cef.GetDictionary.GetValue(us)), V8_PROPERTY_ATTRIBUTE_NONE);
+              us:= UTF8Decode(sl[i]);
+              if (cef.GetDictionary.GetType(us) = VTYPE_DICTIONARY) and
+                cef.GetDictionary.GetDictionary(us).HasKey(VTYPE_FUNCTION_NAME) and
+                (cef.GetDictionary.GetDictionary(us).GetType(VTYPE_FUNCTION_NAME) = VTYPE_BOOL) and
+                cef.GetDictionary.GetDictionary(us).HasKey('ModuleName') then begin
+                // function
+                // DEPRECATED
+                s:= UTF8Encode(cef.GetDictionary.GetDictionary(us).GetString('FuncName')) + ' in ' + UTF8Encode(cef.GetDictionary.GetDictionary(us).GetString('ModuleName')) + ' : '#$0d;
+                showWarning(s + 'func.SetBool(VTYPE_FUNCTION_NAME, true); has been DEPRECATED. Use func.SetString(VTYPE_FUNCTION_NAME, "name of function")');
+                handler:= TV8HandlerSafe.Create(
+                  UTF8Encode(cef.GetDictionary.GetDictionary(us).GetString('ModuleName')),
+                  UTF8Encode(cef.GetDictionary.GetDictionary(us).GetString('FuncName')),
+                  [],
+                  CefValueToCefv8Value(cef.GetDictionary.GetDictionary(us).GetValue('CefObject')),
+                  CefValueToCefv8Value(cef.GetDictionary.GetDictionary(us).GetValue('CefLocal')));
+                Result.SetValueByKey(us, TCefv8ValueRef.NewFunction(us, handler), V8_PROPERTY_ATTRIBUTE_NONE);
+              end else begin
+                Result.SetValueByKey(us, CefValueToCefv8Value(cef.GetDictionary.GetValue(us)), V8_PROPERTY_ATTRIBUTE_NONE);
+              end;
             end;
           end;
+        finally
+          sl.Free;
         end;
-      finally
-        sl.Free;
       end;
     end;
+
     else
       Result:= TCefv8ValueRef.NewNull;
   end;
@@ -790,7 +816,8 @@ function Cefv8ValueToCefValue(const v8: ICefv8Value; const uid: string): ICefVal
     end;
     funcs_uid.SetValueByKey(key, v8, V8_PROPERTY_ATTRIBUTE_NONE);
     dic.SetString('FuncName', G_VAR_IN_JS_NAME + '._ipc_g["' + uuid + '"]["' + key + '"]');
-    dic.SetString('UID', uuid);
+    dic.SetString('G_UID', uuid);
+    dic.SetString('G_KEY', key);
     v.SetDictionary(dic);
   end;
 

@@ -694,31 +694,31 @@ begin
   dic:= NewUserObject(fs);
 
   func:= TCefDictionaryValueRef.New;
-  func.SetBool(VTYPE_FUNCTION_NAME, true);
+  func.SetString(VTYPE_FUNCTION_NAME, 'close');
   func.SetString('ModuleName', 'fs');
   func.SetString('FuncName', 'filehandle.close');
   dic.SetDictionary('close', func);
 
   func:= TCefDictionaryValueRef.New;
-  func.SetBool(VTYPE_FUNCTION_NAME, true);
+  func.SetString(VTYPE_FUNCTION_NAME, 'read');
   func.SetString('ModuleName', 'fs');
   func.SetString('FuncName', 'filehandle.read');
   dic.SetDictionary('read', func);
 
   func:= TCefDictionaryValueRef.New;
-  func.SetBool(VTYPE_FUNCTION_NAME, true);
+  func.SetString(VTYPE_FUNCTION_NAME, 'write');
   func.SetString('ModuleName', 'fs');
   func.SetString('FuncName', 'filehandle.write');
   dic.SetDictionary('write', func);
 
   func:= TCefDictionaryValueRef.New;
-  func.SetBool(VTYPE_FUNCTION_NAME, true);
+  func.SetString(VTYPE_FUNCTION_NAME, 'seek');
   func.SetString('ModuleName', 'fs');
   func.SetString('FuncName', 'filehandle.seek');
   dic.SetDictionary('seek', func);
 
   func:= TCefDictionaryValueRef.New;
-  func.SetBool(VTYPE_FUNCTION_NAME, true);
+  func.SetString(VTYPE_FUNCTION_NAME, 'size');
   func.SetString('ModuleName', 'fs');
   func.SetString('FuncName', 'filehandle.size');
   dic.SetDictionary('size', func);
@@ -946,13 +946,13 @@ begin
 
   dic:= NewUserObject(thread);
   func:= TCefDictionaryValueRef.New;
-  func.SetBool(VTYPE_FUNCTION_NAME, true);
+  func.SetString(VTYPE_FUNCTION_NAME, 'read');
   func.SetString('ModuleName', MODULE_NAME);
   func.SetString('FuncName', 'cp.read');
   dic.SetDictionary('read', func);
 
   func:= TCefDictionaryValueRef.New;
-  func.SetBool(VTYPE_FUNCTION_NAME, true);
+  func.SetString(VTYPE_FUNCTION_NAME, 'cancel');
   func.SetString('ModuleName', MODULE_NAME);
   func.SetString('FuncName', 'cp.cancel');
   dic.SetDictionary('cancel', func);
@@ -1214,7 +1214,7 @@ begin
         dic.SetInt('attr', searchRec.Attr);
 
         func:= TCefDictionaryValueRef.New;
-        func.SetBool(VTYPE_FUNCTION_NAME, true);
+        func.SetString(VTYPE_FUNCTION_NAME, 'isDirectory');
         func.SetString('ModuleName', 'fs');
         func.SetString('FuncName', 'dirent.isDirectory');
         dic.SetDictionary('isDirectory', func);
