@@ -742,6 +742,7 @@ type
     FCanceled, FComplete: boolean;
     FFileName, FError, argString: string;
     FCount, FSize, argInt64: int64;
+    FOption: ICefDictionaryValue;
     procedure syncError;
     procedure syncComplete;
     procedure syncCancel;
@@ -771,10 +772,11 @@ var
 begin
   srcTarget:= src;
   dstTarget:= dst;
-  optRecursive:= Assigned(option) and option.HasKey('recursive') and option.GetBool('recursive');
-  optPreparation:= (dst = '') or (Assigned(option) and option.HasKey('preparation') and option.GetBool('preparation'));
-  if Assigned(option) and option.HasKey('filter') and (option.GetType('filter') = VTYPE_DICTIONARY) then begin
-    dic:= option.GetDictionary('filter');
+  FOption:= CopyCefValueEx(option) as ICefDictionaryValue;
+  optRecursive:= Assigned(FOption) and FOption.HasKey('recursive') and option.GetBool('recursive');
+  optPreparation:= (dst = '') or (Assigned(FOption) and FOption.HasKey('preparation') and FOption.GetBool('preparation'));
+  if Assigned(FOption) and FOption.HasKey('filter') and (FOption.GetType('filter') = VTYPE_DICTIONARY) then begin
+    dic:= FOption.GetDictionary('filter');
     if dic.HasKey(VTYPE_FUNCTION_NAME) then begin
       optFilter:= UTF8Encode(dic.GetString('FuncName'));
     end;
@@ -786,7 +788,6 @@ end;
 
 destructor TRealCpThread.Destroy;
 begin
-  RemoveIPCG(UID);
   inherited Destroy;
 end;
 

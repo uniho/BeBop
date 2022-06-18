@@ -80,13 +80,13 @@ begin
   msg.ArgumentList.SetSize(5);
   msg.ArgumentList.SetString(0, UTF8Decode(Result));
   msg.ArgumentList.SetString(1, UTF8Decode(moduleName + '.' + thread.ClassName));
-  msg.ArgumentList.SetList(2, Cefv8ArrayToCefList(Args, Result));
+  msg.ArgumentList.SetList(2, Cefv8ArrayToCefList(Args));
   if g.IsSame(obj) then begin
     msg.ArgumentList.SetNull(3);
   end else begin
-    msg.ArgumentList.SetValue(3, Cefv8ValueToCefValue(obj, Result));
+    msg.ArgumentList.SetValue(3, Cefv8ValueToCefValue(obj));
   end;
-  msg.ArgumentList.SetValue(4, Cefv8ValueToCefValue(local, Result));
+  msg.ArgumentList.SetValue(4, Cefv8ValueToCefValue(local));
 
   TCefv8ContextRef.Current.Browser.MainFrame.SendProcessMessage(PID_BROWSER, msg);
 end;
