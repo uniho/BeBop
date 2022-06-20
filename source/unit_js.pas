@@ -90,9 +90,10 @@ procedure RemoveObjectListResult(const uuid: string; result: TTaskResult);
 function StringPasToJS(const str: string): string;
 function StringPasToJS2(const str: string): string;
 function CefValueToCefv8Value(const cef: ICefValue): ICefv8Value;
-function Cefv8ValueToCefValue(const v8: ICefv8Value): ICefValue;
-function Cefv8ArrayToCefList(const v8: TCefv8ValueArray): ICefListValue;
-function CopyCefValueEx(const src: ICefBaseRefCounted): ICefBaseRefCounted;
+function Cefv8ValueToCefValue(const v8: ICefv8Value; convFuncs: boolean = true): ICefValue;
+function Cefv8ArrayToCefList(const v8: TCefv8ValueArray; convFuncs: boolean = true): ICefListValue;
+function CopyCefValueEx(const src: ICefBaseRefCounted): ICefValue;
+procedure CleanupIPCG;
 procedure RemoveIPCG(const uid: string);
 function NewV8Object(const parent: ICefv8Value; const args: TCefv8ValueArray): ICefv8Value;
 function NewV8Promise(const name: ustring; const handler: ICefv8Handler): ICefv8Value;
@@ -116,7 +117,7 @@ uses
   {$ENDIF}
 
   unit_global,
-  Forms, TypInfo,
+  Forms, TypInfo, DateUtils,
   uCEFConstants, uCEFListValue, uCEFv8Context, uCEFProcessMessage,
   uCefDictionaryValue, uCefBinaryValue, uCEFTask, uCEFMiscFunctions,
   uCefv8ArrayBufferReleaseCallback;
@@ -374,6 +375,7 @@ var
       v1.ExecuteFunction(nil, [param]);
     finally
       ipc.DeleteValueByKey(us);
+      CleanupIPCG;
     end;
   end;
 
@@ -609,38 +611,24 @@ end;
 
 destructor TCefValueExRef.Destroy;
 var
-  uid, uid2: string;
-  g: ICefv8Value;
+  uid: string;
+  g, v: ICefv8Value;
 begin
   if RefCount = 0 then begin
     if GetType = VTYPE_DICTIONARY then begin
       if GetDictionary.HasKey(VTYPE_FUNCTION_NAME) then begin
         if GetDictionary.HasKey('G_UID') then begin
-          if GetDictionary.HasKey('NEW_UID') then begin
-            if Assigned(TCefv8ContextRef.Current) and
-              Assigned(TCefv8ContextRef.Current.GetGlobal) then begin
-              g:= TCefv8ContextRef.Current.GetGlobal;
-              g:= g.GetValueByKey(G_VAR_IN_JS_NAME);
-              g:= g.GetValueByKey('_ipc_g');
-              g.SetValueByKey(GetDictionary.GetString('NEW_UID'),
-               g.GetValueByKey(GetDictionary.GetString('G_UID')), V8_PROPERTY_ATTRIBUTE_NONE);
-            end else begin
-              uid:= UTF8Encode(GetDictionary.GetString('G_UID'));
-              uid2:= UTF8Encode(GetDictionary.GetString('NEW_UID'));
-              NewFunctionRe(
-               G_VAR_IN_JS_NAME + '._ipc_g["' + uid2 + '"]=' +
-               G_VAR_IN_JS_NAME + '._ipc_g["' + uid + '"];', nil, '', true);
-            end;
-          end;
           if Assigned(TCefv8ContextRef.Current) and
             Assigned(TCefv8ContextRef.Current.GetGlobal) then begin
             g:= TCefv8ContextRef.Current.GetGlobal;
             g:= g.GetValueByKey(G_VAR_IN_JS_NAME);
             g:= g.GetValueByKey('_ipc_g');
-            //g.DeleteValueByKey(GetDictionary.GetString('G_UID'));
+            v:= g.GetValueByKey(GetDictionary.GetString('G_UID'));
+            v.SetValueByKey('del', TCefV8ValueRef.NewDouble(Now), V8_PROPERTY_ATTRIBUTE_NONE);
           end else begin
             uid:= UTF8Encode(GetDictionary.GetString('G_UID'));
-            NewFunctionRe('delete ' + G_VAR_IN_JS_NAME + '._ipc_g["' + uid + '"];', nil, '', false);
+            NewFunctionRe(G_VAR_IN_JS_NAME + '._ipc_g["' + uid + '"].del=' +
+             FloatToStr(Now) + ';', nil, '', false);
           end;
         end;
       end;
@@ -856,21 +844,23 @@ begin
   inherited Create;
 end;
 
-function Cefv8ValueToCefValue(const v8: ICefv8Value): ICefValue;
+function Cefv8ValueToCefValue(const v8: ICefv8Value; convFuncs: boolean): ICefValue;
 
   procedure setFunction(const v: ICefValue);
   var
     key: ustring;
-    gvar, funcs: ICefv8Value;
+    gvar, ipcg, funcs: ICefv8Value;
     dic: ICefDictionaryValue;
   begin
     key:= UTF8Decode(NewUID());
     gvar:= TCefv8ContextRef.Current.GetGlobal.GetValueByKey(G_VAR_IN_JS_NAME);
-    funcs:= gvar.GetValueByKey('_ipc_g');
+    ipcg:= gvar.GetValueByKey('_ipc_g');
+    ipcg.SetValueByKey(key, TCefV8ValueRef.NewObject(nil, nil), V8_PROPERTY_ATTRIBUTE_NONE);
+    funcs:= ipcg.GetValueByKey(key);
     dic:= TCefDictionaryValueRef.New;
-    dic.SetBool(VTYPE_FUNCTION_NAME, true);
-    funcs.SetValueByKey(key, v8, V8_PROPERTY_ATTRIBUTE_NONE);
-    dic.SetString('FuncName', G_VAR_IN_JS_NAME + '._ipc_g["' + key + '"]');
+    dic.SetString(VTYPE_FUNCTION_NAME, v8.GetFunctionName);
+    funcs.SetValueByKey('f', v8, V8_PROPERTY_ATTRIBUTE_NONE);
+    dic.SetString('FuncName', G_VAR_IN_JS_NAME + '._ipc_g["' + key + '"].f');
     dic.SetString('G_UID', key);
     v.SetDictionary(dic);
   end;
@@ -900,7 +890,7 @@ begin
     len:= v8.GetArrayLength;
     //list.SetSize(len);
     for i:= 0 to len-1 do begin
-      list.SetValue(i, Cefv8ValueToCefValue(v8.GetValueByIndex(i)));
+      list.SetValue(i, Cefv8ValueToCefValue(v8.GetValueByIndex(i), convFuncs));
     end;
     Result.SetList(list);
   end else if v8.IsArrayBuffer then begin
@@ -917,7 +907,7 @@ begin
     end;
     Result.SetBinary(TCefBinaryValueRef.New(@s[1], len));
   end else if v8.IsFunction then begin
-    setFunction(Result);
+    if convFuncs then setFunction(Result);
   end else if v8.IsObject then begin
     sl:= TStringList.Create;
     try
@@ -925,7 +915,7 @@ begin
       dic:= TCefDictionaryValueRef.New;
       for i:= 0 to sl.count-1 do begin
         us:= UTF8Decode(sl[i]);
-        dic.SetValue(us, Cefv8ValueToCefValue(v8.GetValueByKey(us)));
+        dic.SetValue(us, Cefv8ValueToCefValue(v8.GetValueByKey(us), convFuncs));
       end;
       Result.SetDictionary(dic);
     finally
@@ -934,7 +924,7 @@ begin
   end;
 end;
 
-function Cefv8ArrayToCefList(const v8: TCefv8ValueArray): ICefListValue;
+function Cefv8ArrayToCefList(const v8: TCefv8ValueArray; convFuncs: boolean = true): ICefListValue;
 var
   i, len: integer;
 begin
@@ -942,63 +932,124 @@ begin
   len:= Length(v8);
   //Result.SetSize(len);
   for i:= 0 to len-1 do begin
-    Result.SetValue(i, Cefv8ValueToCefValue(v8[i]));
+    Result.SetValue(i, Cefv8ValueToCefValue(v8[i], convFuncs));
   end;
 end;
 
-function CopyCefValueEx(const src: ICefBaseRefCounted): ICefBaseRefCounted;
+function CopyCefValueEx(const src: ICefBaseRefCounted): ICefValue;
 var
   uid, uid2, us: ustring;
   g: ICefv8Value;
-  dic: ICefDictionaryValue;
+  srcdic, dic: ICefDictionaryValue;
+  srclist, list: ICefListValue;
   sl: TStringList;
-  i: integer;
+  i, len: integer;
 begin
+  Result:= nil;
   dic:= nil;
   if src is ICefDictionaryValue then begin
-    Result:= ICefDictionaryValue(src).Copy(true);
-    dic:= ICefDictionaryValue(Result);
+    srcdic:= ICefDictionaryValue(src);
+    dic:= TCefDictionaryValueRef.New;
+    Result:= TCefValueExRef.New;
+    Result.SetDictionary(dic);
   end else if src is ICefValue then begin
-    Result:= ICefValue(src).Copy;
-    if ICefValue(src).GetType = VTYPE_DICTIONARY then dic:= ICefValue(Result).GetDictionary;
-  end else begin
-    Result:= src;
-  end;
-  if Assigned(dic) then begin
-    if dic.HasKey(VTYPE_FUNCTION_NAME) and dic.HasKey('G_UID') then begin
-      uid:= dic.GetString('G_UID');
-      uid2:= UTF8Decode(NewUID());
-      dic.SetString('FuncName', G_VAR_IN_JS_NAME + '._ipc_g["' + uid2 + '"]');
-      dic.SetString('G_UID', uid2);
-      if src is ICefDictionaryValue then begin
-        ICefDictionaryValue(src).SetString('NEW_UID', uid2);
-      end else if (src is ICefValue) and
-        (ICefValue(src).GetType = VTYPE_DICTIONARY) then begin
-        ICefValue(Result).GetDictionary.SetString('NEW_UID', uid2);
+    case ICefValue(src).GetType of
+      VTYPE_BOOL: begin
+        Result:= TCefValueExRef.New;
+        Result.SetBool(ICefValue(src).GetBool);
       end;
+      VTYPE_INT: begin
+        Result:= TCefValueExRef.New;
+        Result.SetInt(ICefValue(src).GetInt);
+      end;
+      VTYPE_DOUBLE: begin
+        Result:= TCefValueExRef.New;
+        Result.SetDouble(ICefValue(src).GetDouble);
+      end;
+      VTYPE_STRING: begin
+        Result:= TCefValueExRef.New;
+        Result.SetString(ICefValue(src).GetString);
+      end;
+      VTYPE_LIST: begin
+        Result:= TCefValueExRef.New;
+        list:= TCefListValueRef.New;
+        Result.SetList(list);
+        srclist:= ICefValue(src).GetList;
+        len:= srclist.GetSize;
+        for i:= 0 to len-1 do begin
+          list.SetValue(i, CopyCefValueEx(srclist.GetValue(i)));
+        end;
+      end;
+      VTYPE_BINARY: begin
+        Result:= TCefValueExRef.New;
+        Result.SetBinary(ICefValue(src).GetBinary.Copy);
+      end;
+      VTYPE_DICTIONARY: begin
+        srcdic:= ICefValue(src).GetDictionary;
+        dic:= TCefDictionaryValueRef.New;
+        Result:= TCefValueExRef.New;
+        Result.SetDictionary(dic);
+      end;
+    end;
+  end;
+
+  if Assigned(dic) then begin
+    if srcdic.HasKey(VTYPE_FUNCTION_NAME) and srcdic.HasKey('G_UID') then begin
+      uid:= srcdic.GetString('G_UID');
+      uid2:= UTF8Decode(NewUID());
+      dic.SetString(VTYPE_FUNCTION_NAME, srcdic.GetString(VTYPE_FUNCTION_NAME));
+      dic.SetString('FuncName', G_VAR_IN_JS_NAME + '._ipc_g["' + uid2 + '"].f');
+      dic.SetString('G_UID', uid2);
       if Assigned(TCefv8ContextRef.Current) and Assigned(TCefv8ContextRef.Current.GetGlobal) then begin
         g:= TCefv8ContextRef.Current.GetGlobal;
         g:= g.GetValueByKey(G_VAR_IN_JS_NAME);
         g:= g.GetValueByKey('_ipc_g');
-        g.SetValueByKey(uid2, g.GetValueByKey(uid), V8_PROPERTY_ATTRIBUTE_NONE);
+        g.SetValueByKey(uid2, TCefV8ValueRef.NewObject(nil, nil), V8_PROPERTY_ATTRIBUTE_NONE);
+        g.GetValueByKey(uid2).SetValueByKey('f',
+         g.GetValueByKey(uid).GetValueByKey('f'), V8_PROPERTY_ATTRIBUTE_NONE);
       end else begin
         NewFunctionRe(
-         'if (' + G_VAR_IN_JS_NAME + '._ipc_g["' + UTF8Encode(uid) + '"]) ' +
-         G_VAR_IN_JS_NAME + '._ipc_g["' + UTF8Encode(uid2) + '"]=' +
-         G_VAR_IN_JS_NAME + '._ipc_g["' + UTF8Encode(uid) + '"];', nil, '', true);
+         G_VAR_IN_JS_NAME + '._ipc_g["' + UTF8Encode(uid2) + '"]={}; ' +
+         G_VAR_IN_JS_NAME + '._ipc_g["' + UTF8Encode(uid2) + '"].f=' +
+         G_VAR_IN_JS_NAME + '._ipc_g["' + UTF8Encode(uid) + '"].f;', nil, '', true);
       end;
     end else begin
       sl:= TStringList.Create;
       try
-        dic.GetKeys(sl);
+        srcdic.GetKeys(sl);
         for i:= 0 to sl.count-1 do begin
           us:= UTF8Decode(sl[i]);
-          dic.SetValue(us, ICefValue(CopyCefValueEx(dic.GetValue(us))));
+          dic.SetValue(us, CopyCefValueEx(srcdic.GetValue(us)));
         end;
       finally
         sl.Free;
       end;
     end;
+  end;
+end;
+
+procedure CleanupIPCG;
+var
+  v, g, ipcg: ICefv8Value;
+  sl: TStringList;
+  i, len: integer;
+  us: ustring;
+begin
+  g:= TCefv8ContextRef.Current.GetGlobal;
+  ipcg:= g.GetValueByKey(G_VAR_IN_JS_NAME).GetValueByKey('_ipc_g');
+  sl:= TStringList.Create;
+  try
+    ipcg.GetKeys(sl);
+    len:= sl.Count;
+    for i:= 0 to len-1 do begin
+      us:= UTF8Decode(sl[i]);
+      v:= ipcg.GetValueByKey(us);
+      v:= v.GetValueByKey('del');
+      if Assigned(v) and v.IsDouble and
+        (SecondsBetween(Now, v.GetDoubleValue) >= 60) then ipcg.DeleteValueByKey(us);
+    end;
+  finally
+    sl.Free;
   end;
 end;
 

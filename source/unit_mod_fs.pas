@@ -742,7 +742,7 @@ type
     FCanceled, FComplete: boolean;
     FFileName, FError, argString: string;
     FCount, FSize, argInt64: int64;
-    FOption: ICefDictionaryValue;
+    FOption: ICefValue;
     procedure syncError;
     procedure syncComplete;
     procedure syncCancel;
@@ -752,7 +752,6 @@ type
   protected
     procedure Execute; override;
   public
-    UID: string;
     constructor Create(const src, dst: string; option: ICefDictionaryValue);
     destructor Destroy; override;
     procedure cancel;
@@ -772,11 +771,11 @@ var
 begin
   srcTarget:= src;
   dstTarget:= dst;
-  FOption:= CopyCefValueEx(option) as ICefDictionaryValue;
-  optRecursive:= Assigned(FOption) and FOption.HasKey('recursive') and option.GetBool('recursive');
-  optPreparation:= (dst = '') or (Assigned(FOption) and FOption.HasKey('preparation') and FOption.GetBool('preparation'));
-  if Assigned(FOption) and FOption.HasKey('filter') and (FOption.GetType('filter') = VTYPE_DICTIONARY) then begin
-    dic:= FOption.GetDictionary('filter');
+  optRecursive:= Assigned(option) and option.HasKey('recursive') and option.GetBool('recursive');
+  optPreparation:= (dst = '') or (Assigned(option) and option.HasKey('preparation') and option.GetBool('preparation'));
+  if Assigned(option) and option.HasKey('filter') and (option.GetType('filter') = VTYPE_DICTIONARY) then begin
+    FOption:= CopyCefValueEx(option);
+    dic:= FOption.GetDictionary.GetDictionary('filter');
     if dic.HasKey(VTYPE_FUNCTION_NAME) then begin
       optFilter:= UTF8Encode(dic.GetString('FuncName'));
     end;
@@ -839,7 +838,7 @@ procedure TRealCpThread.Execute;
                   if optFilter <> '' then begin
                     args:= TCefListValueRef.New;
                     args.SetString(0, UTF8Decode(srcDir+s));
-                    filter:= NewFunctionRe('return ' + optFilter + '(args[0]);', args, UID).GetBool;
+                    filter:= NewFunctionRe('return ' + optFilter + '(args[0]);', args).GetBool;
                   end;
                   if filter then begin
                     if not DirectoryExists(dstDir+s) then RealCreateDir(dstDir+s);
@@ -852,7 +851,7 @@ procedure TRealCpThread.Execute;
                 if optFilter <> '' then begin
                   args:= TCefListValueRef.New;
                   args.SetString(0, UTF8Decode(srcDir+searchRec.Name));
-                  filter:= NewFunctionRe('return ' + optFilter + '(args[0]);', args, UID).GetBool;
+                  filter:= NewFunctionRe('return ' + optFilter + '(args[0]);', args).GetBool;
                 end;
                 if filter then begin
                   Result:= copy(srcDir+searchRec.Name, dstDir+searchRec.Name);
@@ -940,7 +939,6 @@ begin
   end;
 
   thread:= TRealCpThread.Create(src, dst, option);
-  thread.UID:= Self.UID;
   if not Assigned(option) or not option.GetBool('progressive') then begin
     thread.WaitFor;
   end;

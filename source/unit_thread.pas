@@ -84,7 +84,7 @@ begin
   if g.IsSame(obj) then begin
     msg.ArgumentList.SetNull(3);
   end else begin
-    msg.ArgumentList.SetValue(3, Cefv8ValueToCefValue(obj));
+    msg.ArgumentList.SetValue(3, Cefv8ValueToCefValue(obj, false));
   end;
   msg.ArgumentList.SetValue(4, Cefv8ValueToCefValue(local));
 
