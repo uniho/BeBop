@@ -100,6 +100,7 @@ procedure NewFunction(const code: string; const args: ICefListValue = nil; const
 function NewFunctionRe(const code: string; const args: ICefListValue = nil; const uid: string = ''; return: boolean = true): ICefValue;
 function NewFunctionV8(const code: string; const args: TCefv8ValueArray): ICefv8Value;
 function NewUserObject(const obj: TObject): ICefDictionaryValue;
+function NewUserObjectV8(const obj: TObject): ICefv8Value;
 procedure showWarning(const msg: string);
 procedure showWarningUI(const msg: string);
 
@@ -1132,6 +1133,22 @@ begin
   Result:= TCefDictionaryValueRef.New;
   s:= AddObjectList(obj);
   Result.SetString(VTYPE_OBJECT_NAME, UTF8Decode(s));
+end;
+
+function NewUserObjectV8(const obj: TObject): ICefv8Value;
+var
+  s: string;
+  len: integer;
+  p: PChar;
+begin
+  Result:= TCefv8ValueRef.NewObject(nil, nil);
+  s:= AddObjectList(obj);
+  Result.SetValueByKey(VTYPE_OBJECT_NAME, TCefv8ValueRef.NewString(UTF8Decode(s)), V8_PROPERTY_ATTRIBUTE_NONE);
+  len:= Length(s) + 1;
+  p:= GetMem(len);
+  Move(PChar(s)^, p^, len);
+  Result.SetValueByKey(VTYPE_OBJECT_FIELD, TCefv8ValueRef.NewArrayBuffer(
+    p, len, TCefFastv8ArrayBufferReleaseCallback.Create(@FreeMemProcUserObject)), V8_PROPERTY_ATTRIBUTE_NONE);
 end;
 
 end.
