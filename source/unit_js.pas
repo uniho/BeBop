@@ -8,7 +8,7 @@ interface
 
 uses
   Classes, SysUtils,
-  uCEFInterfaces, uCEFTypes, uCEFv8Handler, uCEFValue, uCEFv8Value;
+  uCEFInterfaces, uCEFTypes, uCEFv8Handler, uCEFValue, uCEFv8Value, uCEFChromium;
 
 type
 
@@ -98,7 +98,7 @@ procedure RemoveIPCG(const uid: string);
 function NewV8Object(const parent: ICefv8Value; const args: TCefv8ValueArray): ICefv8Value;
 function NewV8Promise(const name: ustring; const handler: ICefv8Handler): ICefv8Value;
 procedure NewFunction(const code: string; const args: ICefListValue = nil; const uid: string = ''); // DEPRECATED
-function NewFunctionRe(const code: string; const args: ICefListValue = nil; const uid: string = ''; return: boolean = true): ICefValue;
+function NewFunctionRe(const code: string; const args: ICefListValue = nil; const uid: string = ''; return: boolean = true; const crm: TChromium = nil): ICefValue;
 function NewFunctionV8(const code: string; const args: TCefv8ValueArray): ICefv8Value;
 function NewUserObject(const obj: TObject): ICefDictionaryValue;
 function NewUserObjectV8(const obj: TObject): ICefv8Value;
@@ -1135,7 +1135,8 @@ begin
   CefPostTask(TID_UI, TNewFunctionTask.Create(code, args, uid));
 end;
 
-function NewFunctionRe(const code: string; const args: ICefListValue; const uid: string; return: boolean): ICefValue;
+function NewFunctionRe(const code: string; const args: ICefListValue;
+  const uid: string; return: boolean; const crm: TChromium): ICefValue;
 var
   msg: ICefProcessMessage;
   resultId: string;
@@ -1153,7 +1154,10 @@ begin
   resultId:= AddObjectList(nil);
   msg.ArgumentList.SetString(3, UTF8Decode(resultId));
 
-  unit_global.Chromium.SendProcessMessage(PID_RENDERER, msg);
+  if Assigned(crm) then
+    crm.SendProcessMessage(PID_RENDERER, msg)
+  else
+    unit_global.Chromium.SendProcessMessage(PID_RENDERER, msg);
 
   Result:= nil;
   while return and not unit_global.appClosing do begin
