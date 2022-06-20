@@ -58,9 +58,9 @@ type
     procedure callback(obj: TObject);
   end;
 
-  { TInterfaceObject }
+  { TObjectWithInterface }
 
-  TInterfaceObject = class
+  TObjectWithInterface = class
   public
     cefBaseRefCounted: ICefBaseRefCounted;
     destructor Destroy; override;
@@ -599,9 +599,9 @@ begin
   result:= obj;
 end;
 
-{ TInterfaceObject }
+{ TObjectWithInterface }
 
-destructor TInterfaceObject.Destroy;
+destructor TObjectWithInterface.Destroy;
 begin
   cefBaseRefCounted:= nil;
   inherited Destroy;
@@ -1139,7 +1139,7 @@ function NewFunctionRe(const code: string; const args: ICefListValue; const uid:
 var
   msg: ICefProcessMessage;
   resultId: string;
-  obj: TInterfaceObject;
+  obj: TObjectWithInterface;
 begin
   msg:= TCefProcessMessageRef.New('new_function_re');
   if Assigned(args) then begin
@@ -1157,7 +1157,7 @@ begin
 
   Result:= nil;
   while return and not unit_global.appClosing do begin
-    obj:= TInterfaceObject(GetObjectList(resultId));
+    obj:= TObjectWithInterface(GetObjectList(resultId));
     if Assigned(obj) then begin
       Result:= obj.cefBaseRefCounted as ICefValue;
       break;

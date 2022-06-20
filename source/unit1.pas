@@ -562,9 +562,9 @@ procedure TForm1.ChromiumProcessMessageReceived(Sender: TObject;
   //
   procedure new_function_re;
   var
-    obj: TInterfaceObject;
+    obj: TObjectWithInterface;
   begin
-    obj:= TInterfaceObject.Create;
+    obj:= TObjectWithInterface.Create;
     obj.cefBaseRefCounted:= message.ArgumentList.GetValue(1);
     SetObjectList(UTF8Encode(message.ArgumentList.GetString(0)), obj);
   end;
