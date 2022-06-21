@@ -45,7 +45,7 @@ begin
     args:= TCefListValueRef.New;
     args.SetString(0, UTF8Decode(sl.Text));
     // see https://javascript.info/new-function
-    NewFunction('console.log(args[0])', args);
+    NewFunctionRe('console.log(args[0])', args);
 
     Result := 0;
   finally
