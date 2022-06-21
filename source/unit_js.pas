@@ -8,7 +8,7 @@ interface
 
 uses
   Classes, SysUtils,
-  uCEFInterfaces, uCEFTypes, uCEFv8Handler, uCEFValue, uCEFv8Value, uCEFChromium;
+  uCEFInterfaces, uCEFTypes, uCEFv8Handler, uCEFValue, uCEFv8Value, uCEFChromiumCore;
 
 type
 
@@ -98,7 +98,7 @@ procedure RemoveIPCG(const uid: string);
 function NewV8Object(const parent: ICefv8Value; const args: TCefv8ValueArray): ICefv8Value;
 function NewV8Promise(const name: ustring; const handler: ICefv8Handler): ICefv8Value;
 procedure NewFunction(const code: string; const args: ICefListValue = nil; const uid: string = ''); // DEPRECATED
-function NewFunctionRe(const code: string; const args: ICefListValue = nil; const uid: string = ''; return: boolean = true; const crm: TChromium = nil): ICefValue;
+function NewFunctionRe(const code: string; const args: ICefListValue = nil; const uid: string = ''; return: boolean = true; const crm: TChromiumCore = nil): ICefValue;
 function NewFunctionV8(const code: string; const args: TCefv8ValueArray): ICefv8Value;
 function NewUserObject(const obj: TObject): ICefDictionaryValue;
 function NewUserObjectV8(const obj: TObject): ICefv8Value;
@@ -1136,7 +1136,7 @@ begin
 end;
 
 function NewFunctionRe(const code: string; const args: ICefListValue;
-  const uid: string; return: boolean; const crm: TChromium): ICefValue;
+  const uid: string; return: boolean; const crm: TChromiumCore): ICefValue;
 var
   msg: ICefProcessMessage;
   resultId: string;
