@@ -378,7 +378,6 @@ procedure TForm1.ChromiumLoadError(Sender: TObject; const browser: ICefBrowser;
 var
   data: TChromiumLoadErrorData;
 begin
-  if (errorCode = ERR_ABORTED) then Exit;
   data:= TChromiumLoadErrorData.Create;
   data.errorText:= UTF8Encode(errorText);
   data.failedUrl:= UTF8Encode(failedUrl);
