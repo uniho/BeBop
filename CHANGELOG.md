@@ -1,6 +1,6 @@
 ## Next version
 
-* Not yet
+* [web_util module] Add `web_util.scraping()`.
 
 ## v1.1.0+102.0.10
 

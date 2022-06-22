@@ -19,7 +19,8 @@
 
   // Emotion is a performant and flexible CSS-in-JS library. 
   // https://github.com/emotion-js/emotion
-  import {css, injectGlobal} from 'https://cdn.skypack.dev/@emotion/css?min'
+
+  const {css, injectGlobal} = await import('https://cdn.skypack.dev/@emotion/css?min')
 
   // htm is JSX-like syntax in plain JavaScript - no transpiler necessary.
   // https://github.com/developit/htm
@@ -80,12 +81,12 @@
     }
 
     const doing = async () => {
-      let stat = {}
+      let stat = {}, title
       do {
         {
           const URL = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
 
-          let title = `Download ${path.basename(URL)}...`
+          title = `Download ${path.basename(URL)}...`
           setState({doing: true, disabled: true, title})
 
           let saveName
@@ -121,7 +122,7 @@
         {
           const URL = 'https://github.com/uniho/BeBop/archive/refs/tags/v1.0.2+101.0.18.zip'
 
-          let title = `Download ${path.basename(URL)}...`
+          title = `Download ${path.basename(URL)}...`
           setState({doing: true, disabled: true, title})
 
           let saveName
@@ -219,12 +220,57 @@
           if (stat.canceled) break
         }
 
+        {
+          title = 'Scraping...'
+          setState({doing: true, disabled: true, title})
+          refFile.current = await util.scraping(
+            'https://google.com'
+          )
+
+          setState({doing: true, title})
+          stat = await refFile.current.wait()
+          if (stat.canceled || stat.error) break
+
+          await refFile.current.newFunction(`
+            const input = document.querySelector('input.gLFyf')
+            if (!input) throw new Error('input not found.')
+            input.focus()
+            input.value = 'lazarus free pascal'
+          `)
+
+          stat = await refFile.current.wait()
+          if (stat.canceled || stat.error) break
+
+          await refFile.current.prepareReload()
+          await refFile.current.sendKeyPress(0x0d)
+
+          stat = await refFile.current.wait()
+          if (stat.canceled || stat.error) break
+
+          const result = await refFile.current.newFunction(`
+            const links = document.querySelectorAll('div.g.tF2Cxc a')
+            for (const link of links) {
+              if (link.href === 'https://www.lazarus-ide.org/') {
+                return link.querySelector('h3').innerText 
+              }
+            }
+            throw new Error('https://www.lazarus-ide.org/ not found.')
+          `)
+
+          stat = await refFile.current.wait()
+          if (stat.canceled || stat.error) break
+
+          title = `Found "${result}" !`
+        }
+
       } while (0)
 
       if (stat.canceled) {
         setState({doing: false, title: 'Canceled.'})
+      } else if (stat.error) {
+        setState({doing: false, title, msg: stat.error})
       } else {
-        setState({doing: false, title: 'Finished!'})
+        setState({doing: false, title})
       }
 
       console.log(__G_VAR_2BDF21C9_321C_4DBE_8C1B_175448499FB8__._ipc_g)
