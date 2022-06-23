@@ -554,7 +554,8 @@ begin
   uobj.crm.OnProcessMessageReceived:= @uobj.ChromiumProcessMessageReceived;
   uobj.crm.OnConsoleMessage:= @uobj.ChromiumConsoleMessage;
 
-  uobj.crm.CreateBrowser();
+  uobj.crm.CreateBrowser(TCefWindowHandle(0), Rect(0,0,0,0), '', nil, nil,
+    false{showAsPopupWindow});
 
   dic:= NewUserObject(uobj);
 
