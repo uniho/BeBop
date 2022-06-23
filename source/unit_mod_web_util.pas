@@ -416,7 +416,7 @@ type
 
   TScrapingObject = class
     crm: TChromium;
-    loaded, canceled, contextCreated, errorOccurred: boolean;
+    loaded, canceled, errorOccurred: boolean;
     FSource, FErrorText: ustring;
     destructor Destroy; override;
     procedure ChromiumLoadStart(Sender: TObject; const browser: ICefBrowser; const frame: ICefFrame; transitionType: TCefTransitionType);
@@ -492,8 +492,6 @@ procedure TScrapingObject.ChromiumProcessMessageReceived(Sender: TObject;
     // + '}'
     //);
     //Chromium.ExecuteJavaScript(us, 'about:blank');
-
-    contextCreated:= true;
   end;
 
   //
@@ -679,7 +677,7 @@ begin
   while true do begin
     if Self.Terminated or unit_global.appClosing or
       uobj.canceled or uobj.errorOccurred then break;
-    if uobj.contextCreated and uobj.loaded and not uobj.crm.IsLoading then break;
+    if uobj.loaded and not uobj.crm.IsLoading then break;
     inc(timeoutc);
     if timeoutc > timeout then break;
     Sleep(10);
@@ -711,7 +709,6 @@ begin
 
   uobj:= TScrapingObject(obj);
   uobj.loaded:= false;
-  uobj.contextCreated:= false;
 
   CefResolve:= TCefValueRef.New;
   CefResolve.SetBool(true);
