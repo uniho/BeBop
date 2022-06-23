@@ -39,14 +39,13 @@ export default props => {
           return
         }
 
-        const listJjson = await JSON.parse(listJsonText[1])
-        const list = listJjson.contents.twoColumnBrowseResultsRenderer.tabs[0].
+        const listJson = await JSON.parse(listJsonText[1])
+        const list = listJson.contents.twoColumnBrowseResultsRenderer.tabs[0].
           tabRenderer.content.sectionListRenderer.contents[0].
           itemSectionRenderer.contents[0].
           playlistVideoListRenderer.contents
 
-        for (let i = 0; i < list.length; i++) {
-          const item = list[i]
+        for (const item of list) {
           fileList.push({name: item.playlistVideoRenderer.videoId, status: ''})
         }
 
