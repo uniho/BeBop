@@ -18,11 +18,7 @@ export default props => {
   const [stateDownloading, setStateDownLoading] = React.useState(false)
   const [stateCanceling, setStateCanceling] = React.useState(false)
   const [stateFileList, setStateFileList] = React.useState([])
-  const _forceUpdate = React.useState()
-  const forceUpdate = () => _forceUpdate[1]({})
   const userAbort = React.useRef(false)
-  const refFileList = React.useRef()
-  refFileList.current = stateFileList
 
   //
   const start = async (uri) => {
@@ -55,7 +51,6 @@ export default props => {
         }
 
         setStateFileList(fileList)
-        forceUpdate()
 
         for (let i = 0; i < list.length; i++) {
           if (userAbort.current) break;
@@ -72,13 +67,16 @@ export default props => {
       }
     }  
   }
-  
+
   //
   const updateFileList = (index, data) => {
     if (index >= 0 && data) {
-      refFileList.current[index] = {...refFileList.current[index], ...data}
+      setStateFileList(state => {
+        const list = [...state]
+        list[index] = {...list[index], ...data}
+        return list
+      })
     }  
-    forceUpdate()
   }
 
   //
