@@ -1,6 +1,9 @@
 unit unit_mod_web_util;
 
 {$mode ObjFPC}{$H+}
+{$IF Defined(DARWIN)}
+{$ModeSwitch objectivec1}
+{$ENDIF}
 
 interface
 
@@ -10,10 +13,17 @@ uses
 implementation
 
 uses
-  Variants, unit_js, unit_thread,
-  uCEFTypes, uCEFInterfaces, unit_global, LazFileUtils,
+  {$IF DEFINED(Windows)}
+  DwmApi,
+  {$ENDIF}
+  {$IF DEFINED(DARWIN)}
+  CocoaAll,
+  {$ENDIF}
+  unit_js, unit_thread,
+  uCEFTypes, uCEFInterfaces, unit_global, LazFileUtils, DateUtils, Forms,
   uCEFConstants, uCEFv8Value, uCEFValue, uCefDictionaryValue, uCefListValue,
-  uCEFUrlRequestClientComponent, uCEFRequest, uCEFUrlRequest, uCefChromium;
+  uCEFUrlRequestClientComponent, uCEFRequest, uCEFUrlRequest, uCefChromium,
+  uCEFMiscFunctions, uCEFRequestContext;
 
 const
   MODULE_NAME = 'web_util'; //////////
@@ -112,6 +122,14 @@ type
   public
   end;
 
+  { TScrapingCloseThread }
+
+  TScrapingCloseThread = class(TPromiseThread)
+  protected
+    procedure ExecuteAct; override;
+  public
+  end;
+
 //
 function safeExecute(const handler: TV8HandlerSafe; const name: ustring;
   const obj: ICefv8Value; const arguments: TCefv8ValueArray;
@@ -126,6 +144,7 @@ begin
      'scraping.newFunction',
      'scraping.wait',
      'scraping.prepareReload',
+     'scraping.close',
      'scraping.cancel',
      'request.read',
      'request.cancel',
@@ -175,6 +194,9 @@ begin
     end;
     'scraping.prepareReload': begin
       StartPromiseThread(TScrapingPrepareReloadThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
+    end;
+    'scraping.close': begin
+      StartPromiseThread(TScrapingCloseThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
     end;
     'scraping.cancel': begin
       StartPromiseThread(TScrapingCancelThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
@@ -247,10 +269,10 @@ procedure TRequestObject.RequestCompleteEvent(Sender: TObject;
 begin
   if Assigned(fileStream) then FreeAndNil(fileStream);
   if request.RequestStatus = UR_SUCCESS then begin
-    DeleteFile(fileName);
+    SysUtils.DeleteFile(fileName);
     if RenameFile(fileName + '.tmp', fileName) then complete:= true else error:= 'rename file error';
   end else begin
-    DeleteFile(fileName + '.tmp');
+    SysUtils.DeleteFile(fileName + '.tmp');
   end;
   finished:= true;
 end;
@@ -336,7 +358,8 @@ var
   obj: TObject;
   req: TRequestObject;
   option, dic: ICefDictionaryValue;
-  wait, waitc: integer;
+  wait: integer;
+  tickstart: TDateTime;
 begin
   dic:= CefObject.GetDictionary;
   if not Assigned(dic) or not dic.IsValid then
@@ -357,10 +380,10 @@ begin
     end;
     if wait < 100 then wait:= 100;
 
-    waitc:= wait div 100;
-    while not Self.Terminated and not req.finished and (waitc > 0) do begin
-      Sleep(100);
-      Dec(waitc);
+    tickstart:= Now;
+    while not Self.Terminated and not req.finished do begin
+      if MilliSecondsBetween(Now, tickstart) >= wait then break;
+      Sleep(10);
     end;
 
   finally
@@ -400,11 +423,20 @@ end;
 
 type
 
+  { TBebopChromium }
+
+  TBebopChromium = class(TChromium)
+  private
+  protected
+  public
+    function CreateSubBrowser(const url: ustring; showBrowser: boolean; bounds: Classes.TRect): boolean;
+  end;
+
   { TScrapingObject }
 
   TScrapingObject = class
-    crm: TChromium;
-    loaded, canceled, errorOccurred: boolean;
+    crm: TBebopChromium;
+    loaded, canceled, errorOccurred, canClose, gotSource: boolean;
     FSource, FErrorText: ustring;
     destructor Destroy; override;
     procedure ChromiumLoadStart(Sender: TObject; const browser: ICefBrowser; const frame: ICefFrame; transitionType: TCefTransitionType);
@@ -414,13 +446,118 @@ type
     procedure ChromiumProcessMessageReceived(Sender: TObject; const browser: ICefBrowser; const frame: ICefFrame; sourceProcess: TCefProcessId; const message: ICefProcessMessage; out Result: Boolean);
     procedure ChromiumTextResultAvailableEvent(Sender: TObject; const aText : ustring);
     procedure ChromiumConsoleMessage(Sender: TObject; const browser: ICefBrowser; level: TCefLogSeverity; const message, source: ustring; line: Integer; out Result: Boolean);
+    procedure ChromiumBeforeClose(Sender: TObject; const browser: ICefBrowser);
   end;
+
+{ TBebopChromium }
+
+function TBebopChromium.CreateSubBrowser(const url: ustring; showBrowser: boolean; bounds: Classes.TRect): boolean;
+var
+  TempNewContext, TempOldContext: ICefRequestContext;
+  r: Classes.TRect;
+begin
+  Result:= False;
+  TempNewContext:= nil;
+  try
+    try
+      GetSettings(FBrowserSettings);
+
+      {$IF DEFINED(Windows)}
+      CreateClientHandler(not showBrowser{isOSR});
+      if showBrowser then begin
+        WindowInfoAsPopUp(FWindowInfo, unit_global.MainForm.Handle);
+        if (bounds.Width = 0) and (bounds.Height = 0) then begin
+          DwmGetWindowAttribute(unit_global.MainForm.Handle, DWMWA_EXTENDED_FRAME_BOUNDS, @r, SizeOf(r));
+          FWindowInfo.bounds.x:= r.Left + (r.Width - unit_global.MainForm.ClientWidth) div 2;
+          FWindowInfo.bounds.y:= r.Top + (r.Height - unit_global.MainForm.ClientHeight) div 2;
+          FWindowInfo.bounds.width:= unit_global.MainForm.ClientWidth;
+          FWindowInfo.bounds.height:= unit_global.MainForm.ClientHeight;
+        end else begin
+          FWindowInfo.bounds.x:= bounds.Left;
+          FWindowInfo.bounds.y:= bounds.Top;
+          FWindowInfo.bounds.width:= bounds.Width;
+          FWindowInfo.bounds.height:= bounds.Height;
+        end;
+      end else begin
+        WindowInfoAsWindowless(FWindowInfo, unit_global.MainForm.Handle);
+      end;
+      {$ENDIF}
+
+      {$IF DEFINED(Linux)}
+      CreateClientHandler(not showBrowser{isOSR});
+      if showBrowser then begin
+        WindowInfoAsPopUp(FWindowInfo, TCefWindowHandle(0));
+        if (bounds.Width = 0) and (bounds.Height = 0) then begin
+          r:= unit_global.MainForm.BoundsRect;
+          FWindowInfo.bounds.x:= r.Left;
+          FWindowInfo.bounds.y:= r.Top;
+          FWindowInfo.bounds.width:= r.Width;
+          FWindowInfo.bounds.height:= r.Height;
+        end else begin
+          FWindowInfo.bounds.x:= bounds.Left;
+          FWindowInfo.bounds.y:= bounds.Top;
+          FWindowInfo.bounds.width:= bounds.Width;
+          FWindowInfo.bounds.height:= bounds.Height;
+        end;
+      end else begin
+        WindowInfoAsWindowless(FWindowInfo, unit_global.MainForm.Handle);
+      end;
+      {$ENDIF}
+
+      {$IF DEFINED(Darwin)}
+      // ToDo: Cannot show for now
+      CreateClientHandler(true{isOSR});
+      WindowInfoAsWindowless(FWindowInfo, TCefWindowHandle(0), '', true);
+
+      //CreateClientHandler(not showBrowser{isOSR});
+      //if showBrowser then begin
+      //  if (bounds.Width = 0) and (bounds.Height = 0) then begin
+      //    r:= unit_global.MainForm.BoundsRect;
+      //  end else begin
+      //    r:= bounds;
+      //  end;
+      //  WindowInfoAsChild(FWindowInfo, unit_global.MainForm.Handle, r, '', false);
+      //end else begin
+      //  WindowInfoAsWindowless(FWindowInfo, TCefWindowHandle(0), '', true);
+      //end;
+      {$ENDIF}
+
+      CreateResourceRequestHandler;
+      CreateMediaObserver;
+      CreateDevToolsMsgObserver;
+      CreateExtensionHandler;
+
+      TempOldContext:= TCefRequestContextRef.Global();
+
+      TempNewContext:= TCefRequestContextRef.Shared(TempOldContext, FReqContextHandler);
+
+      //if GlobalCEFApp.MultiThreadedMessageLoop then begin
+        Result:= CreateBrowserHost(@FWindowInfo, url, @FBrowserSettings, nil, TempNewContext)
+      //end else begin
+      //  Result:= CreateBrowserHostSync(@FWindowInfo, url, @FBrowserSettings, nil, TempNewContext);
+      //end;
+
+    except
+      on e : exception do
+        if CustomExceptionHandler('CreateSubBrowser', e) then raise;
+    end;
+  finally
+    TempOldContext := nil;
+    TempNewContext := nil;
+  end;
+end;
 
 { TScrapingObject }
 
 destructor TScrapingObject.Destroy;
 begin
-  crm.Free;
+  if Assigned(crm) then begin
+    if Assigned(crm.Browser) then begin
+      crm.Browser.Host.CloseBrowser(true);
+      while not canClose do Sleep(10);
+    end;
+    crm.Free;
+  end;
   inherited Destroy;
 end;
 
@@ -430,13 +567,14 @@ procedure TScrapingObject.ChromiumLoadStart(Sender: TObject;
 begin
   loaded:= false;
   errorOccurred:= false;
+  gotSource:= false;
 end;
 
 procedure TScrapingObject.ChromiumLoadEnd(Sender: TObject;
   const Browser: ICefBrowser; const Frame: ICefFrame; httpStatusCode: Integer);
 begin
   if (Frame = nil) or not Frame.IsValid or not Frame.IsMain then Exit;
-  crm.RetrieveHTML();
+  loaded:= true;
 end;
 
 procedure TScrapingObject.ChromiumLoadError(Sender: TObject;
@@ -456,33 +594,6 @@ procedure TScrapingObject.ChromiumProcessMessageReceived(Sender: TObject;
   Result: Boolean);
 
   //
-  procedure context_created;
-  //var
-  //  argv: string;
-  //  us: ustring;
-  //  i: integer;
-  begin
-    //argv:= '[';
-    //for i:= 0 to ParamCount do begin
-    //  argv:= argv + StringPasToJS2(ParamStr(i)) + ',';
-    //end;
-    //argv:= argv + ']';
-    //
-    //us:= UTF8Decode(''
-    // + '{'
-    // + 'const v=window.' + G_VAR_IN_JS_NAME + ';'
-    // + 'v._ipc={};'
-    // + 'v._ipc_g={};'
-    // + 'window.__dogroot = ' + StringPasToJS(dogroot) + ';'
-    // + 'window.__restroot = ' + StringPasToJS(restroot) + ';'
-    // + 'window.__execPath = ' + StringPasToJS(execPath) + ';'
-    // + 'window.__argv = ' + argv + ';'
-    // + '}'
-    //);
-    //Chromium.ExecuteJavaScript(us, 'about:blank');
-  end;
-
-  //
   procedure new_function_re;
   var
     obj: TObjectWithInterface;
@@ -496,7 +607,6 @@ procedure TScrapingObject.ChromiumProcessMessageReceived(Sender: TObject;
 begin
   Result:= False;
   case message.name of
-    'context_created': context_created;
     'new_function_re': new_function_re;
   end;
   Result:= True;
@@ -506,7 +616,7 @@ procedure TScrapingObject.ChromiumTextResultAvailableEvent(Sender: TObject;
   const aText: ustring);
 begin
   FSource:= aText;
-  loaded:= true;
+  gotSource:= true;
 end;
 
 procedure TScrapingObject.ChromiumConsoleMessage(Sender: TObject;
@@ -519,17 +629,27 @@ begin
   end;
 end;
 
+procedure TScrapingObject.ChromiumBeforeClose(Sender: TObject;
+  const browser: ICefBrowser);
+begin
+  // The main browser is being destroyed
+  canClose:= true;
+end;
+
 { TScrapingThread }
 
 procedure TScrapingThread.ExecuteAct;
 var
   uobj: TScrapingObject;
-  option, dic, func: ICefDictionaryValue;
+  option, dic, func, bounds: ICefDictionaryValue;
+  r: TRect;
+  tickstart: TDateTime;
+  timeout: integer;
 begin
   if Args.GetSize < 1 then Raise Exception.Create(ERROR_INVALID_PARAM_COUNT);
 
   uobj:= TScrapingObject.Create;
-  uobj.crm:= TChromium.Create(nil);
+  uobj.crm:= TBebopChromium.Create(nil);
   uobj.crm.DefaultUrl:= Args.GetString(0);
   uobj.crm.MultiBrowserMode:= false;
   uobj.crm.WebRTCIPHandlingPolicy:= hpDisableNonProxiedUDP;
@@ -541,9 +661,34 @@ begin
   uobj.crm.OnTextResultAvailable:= @uobj.ChromiumTextResultAvailableEvent;
   uobj.crm.OnProcessMessageReceived:= @uobj.ChromiumProcessMessageReceived;
   uobj.crm.OnConsoleMessage:= @uobj.ChromiumConsoleMessage;
+  uobj.crm.OnBeforeClose:= @uobj.ChromiumBeforeClose;
 
-  uobj.crm.CreateBrowser(TCefWindowHandle(0), Rect(0,0,0,0), '', nil, nil,
-    false{showAsPopupWindow});
+  option:= nil;
+  if (Args.GetSize > 1) then begin
+    option:= Args.GetDictionary(1);
+  end;
+
+  bounds:= nil;
+  r:= Classes.Rect(0, 0, 0, 0);
+  if Assigned(option) then begin
+    if option.HasKey('bounds') then begin
+      bounds:= option.GetDictionary('bounds');
+      if bounds.HasKey('left') then r.Left:= bounds.GetInt('left');
+      if bounds.HasKey('top') then r.Top:= bounds.GetInt('top');
+      if bounds.HasKey('right') then r.Right:= bounds.GetInt('right');
+      if bounds.HasKey('bottom') then r.Bottom:= bounds.GetInt('bottom');
+      if bounds.HasKey('width') then r.Width:= bounds.GetInt('width');
+      if bounds.HasKey('height') then r.Height:= bounds.GetInt('height');
+    end;
+  end;
+
+  tickstart:= Now;
+  timeout:= 15 * 1000;
+  while not Terminated and not unit_global.appClosing do begin
+    if uobj.crm.CreateSubBrowser(Args.GetString(0), Assigned(bounds), r) then break;
+    if MilliSecondsBetween(Now, tickstart) >= timeout then break;
+    Sleep(100);
+  end;
 
   dic:= NewUserObject(uobj);
 
@@ -572,6 +717,12 @@ begin
   dic.SetDictionary('prepareReload', func);
 
   func:= TCefDictionaryValueRef.New;
+  func.SetString(VTYPE_FUNCTION_NAME, 'close');
+  func.SetString('ModuleName', MODULE_NAME);
+  func.SetString('FuncName', 'scraping.close');
+  dic.SetDictionary('close', func);
+
+  func:= TCefDictionaryValueRef.New;
   func.SetString(VTYPE_FUNCTION_NAME, 'cancel');
   func.SetString('ModuleName', MODULE_NAME);
   func.SetString('FuncName', 'scraping.cancel');
@@ -588,6 +739,8 @@ var
   obj: TObject;
   uobj: TScrapingObject;
   dic: ICefDictionaryValue;
+  tickstart: TDateTime;
+  timeout: integer;
 begin
   dic:= CefObject.GetDictionary;
   if not Assigned(dic) or not dic.IsValid then
@@ -597,6 +750,19 @@ begin
     Raise Exception.Create(ERROR_INVALID_HANDLE_VALUE);
 
   uobj:= TScrapingObject(obj);
+  if not Assigned(uobj.crm) then Raise Exception.Create('The browser was close.');
+  if not Assigned(uobj.crm.Browser) then Raise Exception.Create('The browser was not created.');
+
+  if not uobj.gotSource then begin
+    uobj.crm.RetrieveHTML();
+    tickstart:= Now;
+    timeout:= 30 * 1000;
+    while not uobj.gotSource and not uobj.canceled and
+     not Terminated and not unit_global.appClosing do begin
+      if MilliSecondsBetween(Now, tickstart) >= timeout then break;
+      Sleep(10);
+    end;
+  end;
 
   CefResolve:= TCefValueRef.New;
   CefResolve.SetString(uobj.FSource);
@@ -622,6 +788,8 @@ begin
     Raise Exception.Create(ERROR_INVALID_HANDLE_VALUE);
 
   uobj:= TScrapingObject(obj);
+  if not Assigned(uobj.crm) then Raise Exception.Create('The browser was close.');
+  if not Assigned(uobj.crm.Browser) then Raise Exception.Create('The browser was not created.');
 
   uobj.errorOccurred:= false;
 
@@ -638,7 +806,8 @@ var
   obj: TObject;
   uobj: TScrapingObject;
   dic: ICefDictionaryValue;
-  timeout, timeoutc: integer;
+  tickstart: TDateTime;
+  timeout: integer;
 begin
   dic:= CefObject.GetDictionary;
   if not Assigned(dic) or not dic.IsValid then
@@ -653,16 +822,15 @@ begin
     if timeout < 1 then timeout:= 0;
     if timeout > 10000 then timeout:= 10000;
   end;
-  timeout:= timeout * 100;
+  timeout:= timeout * 1000;
 
   uobj:= TScrapingObject(obj);
-  timeoutc:= 0;
+  tickstart:= Now;
   while true do begin
-    if Self.Terminated or unit_global.appClosing or
-      uobj.canceled or uobj.errorOccurred then break;
+    if Self.Terminated or unit_global.appClosing or uobj.canceled or
+      not Assigned(uobj.crm) or  not Assigned(uobj.crm.Browser) or  uobj.errorOccurred then break;
     if uobj.loaded and not uobj.crm.IsLoading then break;
-    inc(timeoutc);
-    if timeoutc > timeout then break;
+    if MilliSecondsBetween(Now, tickstart) >= timeout then break;
     Sleep(10);
   end;
 
@@ -719,6 +887,32 @@ begin
   CefResolve.SetBool(true);
 end;
 
+{ TScrapingCloseThread }
+
+procedure TScrapingCloseThread.ExecuteAct;
+var
+  obj: TObject;
+  uobj: TScrapingObject;
+  dic: ICefDictionaryValue;
+begin
+  dic:= CefObject.GetDictionary;
+  if not Assigned(dic) or not dic.IsValid then
+    Raise Exception.Create(ERROR_INVALID_HANDLE_VALUE);
+  obj:= GetObjectList(UTF8Encode(dic.GetString(VTYPE_OBJECT_NAME)));
+  if not Assigned(obj) or not(obj is TScrapingObject) then
+    Raise Exception.Create(ERROR_INVALID_HANDLE_VALUE);
+
+  uobj:= TScrapingObject(obj);
+  if Assigned(uobj.crm.Browser) then begin
+    uobj.crm.Browser.Host.CloseBrowser(true);
+  end;
+  while not uobj.canClose do Sleep(10);
+  FreeAndNil(uobj.crm);
+
+  CefResolve:= TCefValueRef.New;
+  CefResolve.SetBool(true);
+end;
+
 //
 const
   _import = G_VAR_IN_JS_NAME + '["' + MODULE_NAME + '"]';
@@ -728,6 +922,10 @@ const
      '';
 
 initialization
+  {$IF Defined(WINDOWS)}
+  InitDwmLibrary;
+  {$ENDIF}
+
   // Regist module handler
   AddModuleHandler(MODULE_NAME, _body, @importCreate, @safeExecute);
 
@@ -741,5 +939,6 @@ initialization
   AddPromiseThreadClass(MODULE_NAME, TScrapingWaitThread);
   AddPromiseThreadClass(MODULE_NAME, TScrapingPrepareReloadThread);
   AddPromiseThreadClass(MODULE_NAME, TScrapingCancelThread);
+  AddPromiseThreadClass(MODULE_NAME, TScrapingCloseThread);
 end.
 

@@ -224,12 +224,15 @@
           title = 'Scraping...'
           setState({doing: true, disabled: true, title})
           refFile.current = await util.scraping(
-            'https://google.com'
+            'https://google.com',
+            {bounds:{}}
           )
 
           setState({doing: true, title})
           stat = await refFile.current.wait()
           if (stat.canceled || stat.error) break
+
+          console.log(await refFile.current.getSource())
 
           await refFile.current.prepareReload()
           await refFile.current.newFunction(`
@@ -260,6 +263,8 @@
           if (stat.canceled || stat.error) break
 
           title = `Found "${result}" !`
+
+          await refFile.current.close()
         }
 
       } while (0)
