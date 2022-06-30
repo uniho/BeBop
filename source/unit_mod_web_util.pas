@@ -572,12 +572,6 @@ begin
   dic.SetDictionary('prepareReload', func);
 
   func:= TCefDictionaryValueRef.New;
-  func.SetString(VTYPE_FUNCTION_NAME, 'sendKeyPress');
-  func.SetString('ModuleName', MODULE_NAME);
-  func.SetString('FuncName', 'scraping.sendKeyPress');
-  dic.SetDictionary('sendKeyPress', func);
-
-  func:= TCefDictionaryValueRef.New;
   func.SetString(VTYPE_FUNCTION_NAME, 'cancel');
   func.SetString('ModuleName', MODULE_NAME);
   func.SetString('FuncName', 'scraping.cancel');
