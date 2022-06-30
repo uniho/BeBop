@@ -112,14 +112,6 @@ type
   public
   end;
 
-  { TScrapingSendKeyPressThread }
-
-  TScrapingSendKeyPressThread = class(TPromiseThread)
-  protected
-    procedure ExecuteAct; override;
-  public
-  end;
-
 //
 function safeExecute(const handler: TV8HandlerSafe; const name: ustring;
   const obj: ICefv8Value; const arguments: TCefv8ValueArray;
@@ -134,7 +126,6 @@ begin
      'scraping.newFunction',
      'scraping.wait',
      'scraping.prepareReload',
-     'scraping.sendKeyPress',
      'scraping.cancel',
      'request.read',
      'request.cancel',
@@ -184,9 +175,6 @@ begin
     end;
     'scraping.prepareReload': begin
       StartPromiseThread(TScrapingPrepareReloadThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
-    end;
-    'scraping.sendKeyPress': begin
-      StartPromiseThread(TScrapingSendKeyPressThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
     end;
     'scraping.cancel': begin
       StartPromiseThread(TScrapingCancelThread, Args, arguments[0], arguments[1], ModuleName, FuncName, CefObject);
@@ -737,46 +725,6 @@ begin
   CefResolve.SetBool(true);
 end;
 
-{ TScrapingSendKeyPressThread }
-
-procedure TScrapingSendKeyPressThread.ExecuteAct;
-var
-  obj: TObject;
-  uobj: TScrapingObject;
-  dic: ICefDictionaryValue;
-  key, modifiers: integer;
-  kev: TCefKeyEvent;
-begin
-  if Args.GetSize < 1 then Raise Exception.Create(ERROR_INVALID_PARAM_COUNT);
-
-  dic:= CefObject.GetDictionary;
-  if not Assigned(dic) or not dic.IsValid then
-    Raise Exception.Create(ERROR_INVALID_HANDLE_VALUE);
-  obj:= GetObjectList(UTF8Encode(dic.GetString(VTYPE_OBJECT_NAME)));
-  if not Assigned(obj) or not(obj is TScrapingObject) then
-    Raise Exception.Create(ERROR_INVALID_HANDLE_VALUE);
-
-  uobj:= TScrapingObject(obj);
-
-  key:= Args.GetInt(0);
-  modifiers:= 0;
-  if Args.GetSize >= 2 then modifiers:= Args.GetInt(1);
-
-  FillChar(kev{%H-}, SizeOf(kev), 0);
-  kev.windows_key_code:= key;
-  kev.native_key_code:= key;
-  //kev.character:= Chr(key);
-  //kev.unmodified_character:= Chr(key);
-  kev.modifiers:= modifiers;
-  kev.focus_on_editable_field:= 0;
-  kev.is_system_key:= 0;
-  kev.kind:= KEYEVENT_CHAR;
-  uobj.crm.SendKeyEvent(@kev);
-
-  CefResolve:= TCefValueRef.New;
-  CefResolve.SetBool(true);
-end;
-
 //
 const
   _import = G_VAR_IN_JS_NAME + '["' + MODULE_NAME + '"]';
@@ -799,6 +747,5 @@ initialization
   AddPromiseThreadClass(MODULE_NAME, TScrapingWaitThread);
   AddPromiseThreadClass(MODULE_NAME, TScrapingPrepareReloadThread);
   AddPromiseThreadClass(MODULE_NAME, TScrapingCancelThread);
-  AddPromiseThreadClass(MODULE_NAME, TScrapingSendKeyPressThread);
 end.
 

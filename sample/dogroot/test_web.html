@@ -231,18 +231,17 @@
           stat = await refFile.current.wait()
           if (stat.canceled || stat.error) break
 
+          await refFile.current.prepareReload()
           await refFile.current.newFunction(`
             const input = document.querySelector('input.gLFyf')
             if (!input) throw new Error('input not found.')
             input.focus()
             input.value = 'lazarus free pascal'
+
+            const form = document.querySelector('form[action="/search"')
+            if (!form) throw new Error('form not found.')
+            form.submit()
           `)
-
-          stat = await refFile.current.wait()
-          if (stat.canceled || stat.error) break
-
-          await refFile.current.prepareReload()
-          await refFile.current.sendKeyPress(0x0d)
 
           stat = await refFile.current.wait()
           if (stat.canceled || stat.error) break
