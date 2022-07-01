@@ -1,5 +1,10 @@
 ## Next version
 
+* Not yet
+
+## v1.1.1+103.0.8
+
+* CEF 103.0.8 / Lazarus 2.2.2 / FPC 3.2.2
 * [web_util module] Add `web_util.scraping()`.
 
 ## v1.1.0+102.0.10
