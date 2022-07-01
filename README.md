@@ -24,10 +24,10 @@ Lazarus with FPC generate very fast small native binaries even though they provi
    * You can take `bebop.exe` from `bebop-v1.x.x+x.x.x-win32.zip` or `bebop-v1.x.x+x.x.x-win64.zip`.
    * Also, `bebop.cfg`, `bebop.ico` and some files put in `dogroot` directory from `sample-v1.x.x+x.x.x.zip`.
 1. Download the CEF binarie files from [CEF Automated Builds](https://cef-builds.spotifycdn.com/index.html).
-   * [For Windows 32bit](https://cef-builds.spotifycdn.com/index.html#windows32:102.0.10)
-   * [For Windows 64bit](https://cef-builds.spotifycdn.com/index.html#windows64:102.0.10)
+   * [For Windows 32bit](https://cef-builds.spotifycdn.com/index.html#windows32:103.0.8)
+   * [For Windows 64bit](https://cef-builds.spotifycdn.com/index.html#windows64:103.0.8)
 
-   Current supported CEF version is `102.0.10`, and "Minimal" type is recommended.
+   Current supported CEF version is `103.0.8`, and "Minimal" type is recommended.
   
    If you cannot find it, click `Show All Builds` or `Show more builds` link at the bottom.
 1. Out of the CEF binarie files, we just need directories named `Release` and `Resources`. Other directories are unnessesary.
@@ -41,9 +41,9 @@ Lazarus with FPC generate very fast small native binaries even though they provi
 1. Download the latest version of BeBop framework from [Releases page in this repository](../../releases).
    * You can take `bebop` from `bebop-v1.x.x+x.x.x-linux64.zip`.
    * Also, `bebop.cfg`, `bebop.ico` and some files put in `dogroot` directory from `sample-v1.x.x+x.x.x.zip`.
-1. Download the CEF binarie files from [CEF Automated Builds (Linux 64-bit)](https://cef-builds.spotifycdn.com/index.html#linux64:102.0.10).
+1. Download the CEF binarie files from [CEF Automated Builds (Linux 64-bit)](https://cef-builds.spotifycdn.com/index.html#linux64:103.0.8).
 
-   Current supported CEF version is `102.0.10`, and "Minimal" type is recommended.
+   Current supported CEF version is `103.0.8`, and "Minimal" type is recommended.
   
    If you cannot find it, click `Show All Builds` or `Show more builds` link at the bottom.
 1. Out of the CEF binarie files, we just need directories named `Release` and `Resources`. Other directories are unnessesary.
@@ -67,9 +67,9 @@ Lazarus with FPC generate very fast small native binaries even though they provi
   └ bebop.cfg
 ```
 
-3. Download the CEF binarie files from [CEF Automated Builds (MacOS 64-bit)](https://cef-builds.spotifycdn.com/index.html#macosx64:102.0.10).
+3. Download the CEF binarie files from [CEF Automated Builds (MacOS 64-bit)](https://cef-builds.spotifycdn.com/index.html#macosx64:103.0.8).
 
-   Current supported CEF version is `102.0.10`, and "Minimal" type is recommended.
+   Current supported CEF version is `103.0.8`, and "Minimal" type is recommended.
   
    If you cannot find it, click `Show All Builds` or `Show more builds` link at the bottom.
 1. Out of the CEF binarie files, we just need `/Release/Chromium Embedded Framework.framework` directory. Other directories are unnessesary.
