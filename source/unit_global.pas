@@ -5,7 +5,7 @@ unit unit_global;
 interface
 
 uses
-  Classes, SysUtils, uCEFChromium;
+  Classes, SysUtils, Controls, uCEFChromium;
 
 const
   PROJECT_NAME = 'bebop';
@@ -44,6 +44,7 @@ var
   ObjectList: TSafeStringList;
   appCanClose, appClosing: boolean;
   Chromium: TChromium;
+  MainForm: TWinControl;
 
 function NewUID(): string;
 function normalizeResourceName(const filename: string): string;

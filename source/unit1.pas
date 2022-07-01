@@ -229,6 +229,7 @@ procedure TForm1.FormCreate(Sender: TObject);
   end;
 
 begin
+  unit_global.MainForm:= Self;
   Caption:= '';
 
   try

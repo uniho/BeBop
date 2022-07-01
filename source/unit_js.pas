@@ -73,6 +73,8 @@ type
     destructor  Destroy; override;
   end;
 
+var
+  MainBrowserID: integer; // just for Renderer Process
 
 procedure WebKitInitializedEvent;
 procedure ContextCreatedEvent(const browser: ICefBrowser; const frame: ICefFrame; const context: ICefv8Context);
@@ -162,6 +164,8 @@ var
   handler: TModuleHandlers;
 begin
   if browser.IsPopup then Exit;
+  if MainBrowserID = 0 then MainBrowserID:= browser.Identifier;
+  if browser.Identifier <> MainBrowserID then Exit;
 
   // DEPRECATED
   context.Global.SetValueByKey('require',
@@ -1206,5 +1210,7 @@ begin
     p, len, TCefFastv8ArrayBufferReleaseCallback.Create(@FreeMemProcUserObject)), V8_PROPERTY_ATTRIBUTE_NONE);
 end;
 
+initialization
+  MainBrowserID:= 0;
 end.
 
