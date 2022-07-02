@@ -55,15 +55,14 @@ Lazarus with FPC generate very fast small native binaries even though they provi
 
 ### ♪ MacOS 64bit
 1. Download the latest version of BeBop framework from [Releases page in this repository](../../releases).
-   * You can take `bebop` and `bebop.app` from `bebop-v1.x.x+x.x.x-macosx64.zip`.
+   * You can take `bebop.app` from `bebop-v1.x.x+x.x.x-macosx64.zip`.
    * Also, `bebop.cfg` and some files put in `dogroot` directory from `sample-v1.x.x+x.x.x.zip`.
-1. Put `bebop.app`, `bebop`, `bebop.cfg` and `dogroot` directory into a same directory. (`bebop.app` is a kind of [bundle file](https://en.wikipedia.org/wiki/Bundle_(macOS)), so you can handle it like a directory.)
+1. Put `bebop.app`, `bebop.cfg`, and `dogroot` directory into a same directory. (`bebop.app` is a kind of [bundle file](https://en.wikipedia.org/wiki/Bundle_(macOS)), so you can handle it like a directory.)
 
 ```
 <Your Dir>
   ├ <dogroot>
   ├ <bebop.app>
-  ├ bebop
   └ bebop.cfg
 ```
 
@@ -90,7 +89,7 @@ Lazarus with FPC generate very fast small native binaries even though they provi
        │    ├ bebop Helper(Renderer).app
        │    └ bebop Helper(Plugin).app
        ├ <MacOS>
-       │    └ 🔗bebop
+       │    └ bebop
        ├ <Resources>
        │    ├ 🔗<dogroot>
        │    └ 🔗bebop.cfg
@@ -105,7 +104,6 @@ Your Directory again.
 <Your Dir>
   ├ <dogroot>
   ├ <bebop.app>
-  ├ bebop
   └ bebop.cfg
 ```
 
